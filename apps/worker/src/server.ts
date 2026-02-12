@@ -1,0 +1,47 @@
+import Fastify from 'fastify';
+import fastifyWs from '@fastify/websocket';
+import fastifyFormbody from '@fastify/formbody';
+import { twimlRoute } from './routes/twiml.js';
+import { websocketRoute } from './routes/websocket.js';
+import { statusCallbackRoute } from './routes/status-callback.js';
+import { startWorker } from './worker/call-worker.js';
+import { config } from './config.js';
+
+const fastify = Fastify({
+  logger: {
+    level: 'info',
+    transport: {
+      target: 'pino-pretty',
+    },
+  },
+});
+
+// Register plugins
+fastify.register(fastifyWs);
+fastify.register(fastifyFormbody);
+
+// Register routes
+fastify.register(twimlRoute);
+fastify.register(websocketRoute);
+fastify.register(statusCallbackRoute);
+
+// Health check
+fastify.get('/health', async () => ({
+  status: 'ok',
+  timestamp: new Date().toISOString(),
+}));
+
+async function start() {
+  try {
+    await fastify.listen({ port: config.PORT, host: '0.0.0.0' });
+    console.log(`Server listening on port ${config.PORT}`);
+
+    // Start the BullMQ worker in the same process
+    startWorker();
+  } catch (err) {
+    fastify.log.error(err);
+    process.exit(1);
+  }
+}
+
+start();

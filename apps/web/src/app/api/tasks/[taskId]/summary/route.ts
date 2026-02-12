@@ -1,0 +1,144 @@
+import { NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
+import Anthropic from '@anthropic-ai/sdk';
+import { SUMMARY_SYSTEM_PROMPT } from '@/lib/ai/prompts';
+
+const anthropic = new Anthropic();
+
+export async function POST(
+  _request: Request,
+  { params }: { params: Promise<{ taskId: string }> }
+) {
+  try {
+    const { taskId } = await params;
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!taskId || typeof taskId !== 'string') {
+      return NextResponse.json({ error: 'Invalid task ID' }, { status: 400 });
+    }
+
+    // Fetch task
+    const { data: task, error: taskError } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('id', taskId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (taskError || !task) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    // Return existing summary if available
+    if (task.summary) {
+      return NextResponse.json({ summary: task.summary });
+    }
+
+    // Fetch all calls for this task
+    const { data: calls, error: callsError } = await supabase
+      .from('calls')
+      .select('*')
+      .eq('task_id', taskId)
+      .order('created_at');
+
+    if (callsError) {
+      console.error('[Summary] Failed to fetch calls:', callsError);
+      return NextResponse.json(
+        { error: 'Failed to load call data' },
+        { status: 500 }
+      );
+    }
+
+    if (!calls || calls.length === 0) {
+      return NextResponse.json({ summary: 'No calls were made for this task.' });
+    }
+
+    // Check if all calls are done before generating summary
+    const activeStatuses = ['queued', 'initiating', 'ringing', 'in_progress', 'on_hold', 'navigating_menu', 'transferred', 'voicemail', 'retrying'];
+    const hasActiveCalls = calls.some((c) => activeStatuses.includes(c.status));
+    if (hasActiveCalls) {
+      return NextResponse.json(
+        { error: 'Some calls are still in progress. Summary will be generated when all calls complete.' },
+        { status: 409 }
+      );
+    }
+
+    // Build call results text
+    const callResults = calls
+      .map((call, i) => {
+        const status = call.status === 'completed' ? 'Successful' : call.status;
+        const retryInfo = (call.retry_count ?? 0) > 0 ? ` (took ${(call.retry_count ?? 0) + 1} attempts)` : '';
+        return `Call ${i + 1}: ${call.business_name} (${call.phone_number})${retryInfo}
+Status: ${status}
+Purpose: ${call.purpose}
+Result: ${call.result_summary || 'No result available'}
+${call.error ? `Error: ${call.error}` : ''}
+${call.duration_seconds ? `Duration: ${Math.floor(call.duration_seconds / 60)}m ${call.duration_seconds % 60}s` : ''}`;
+      })
+      .join('\n\n---\n\n');
+
+    const systemPrompt = SUMMARY_SYSTEM_PROMPT.replace(
+      '{{ORIGINAL_REQUEST}}',
+      task.input_text
+    ).replace('{{CALL_RESULTS}}', callResults);
+
+    // Generate summary with Claude Opus
+    let summary: string;
+    try {
+      const response = await anthropic.messages.create({
+        model: 'claude-opus-4-20250514',
+        max_tokens: 2048,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: 'Please synthesize the results into a clear summary.',
+          },
+        ],
+      });
+
+      summary =
+        response.content[0].type === 'text'
+          ? response.content[0].text
+          : 'Unable to generate summary.';
+    } catch (err) {
+      console.error('[Summary] Claude API failed:', err);
+      // Fallback: generate a basic summary from call data
+      const successfulCalls = calls.filter((c) => c.status === 'completed');
+      const failedCalls = calls.filter((c) => c.status === 'failed' || c.status === 'no_answer' || c.status === 'busy');
+      summary = `Completed ${successfulCalls.length} of ${calls.length} calls.${
+        failedCalls.length > 0 ? ` ${failedCalls.length} call(s) were unsuccessful.` : ''
+      }${
+        successfulCalls.map((c) => c.result_summary).filter(Boolean).length > 0
+          ? '\n\n' + successfulCalls.map((c, i) => `${c.business_name}: ${c.result_summary}`).join('\n')
+          : ''
+      }`;
+    }
+
+    // Save summary to task
+    const { error: updateError } = await supabase
+      .from('tasks')
+      .update({ summary, status: 'completed' })
+      .eq('id', taskId);
+
+    if (updateError) {
+      console.error('[Summary] Failed to save summary:', updateError);
+      // Still return the summary even if save fails
+    }
+
+    return NextResponse.json({ summary });
+  } catch (err) {
+    console.error('[Summary] Unexpected error:', err);
+    return NextResponse.json(
+      { error: 'Failed to generate summary. Please try again.' },
+      { status: 500 }
+    );
+  }
+}
