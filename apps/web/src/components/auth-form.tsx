@@ -21,6 +21,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
 
@@ -31,19 +32,34 @@ export function AuthForm({ mode }: AuthFormProps) {
 
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: fullName },
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
           },
         });
         if (error) throw error;
-        setSuccess(true);
-        setTimeout(() => {
-          router.push('/onboarding');
-          router.refresh();
-        }, 1000);
+
+        // Check if the user was actually created or if they already exist
+        // Supabase returns a user with empty identities if the email is already taken
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          throw new Error('An account with this email already exists. Please sign in instead.');
+        }
+
+        // If the session exists, email confirmation is disabled — go straight in
+        if (data.session) {
+          setSuccess(true);
+          setTimeout(() => {
+            router.push('/onboarding');
+            router.refresh();
+          }, 1000);
+        } else {
+          // Email confirmation is required — show check email message
+          setNeedsConfirmation(true);
+          setSuccess(true);
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -54,7 +70,15 @@ export function AuthForm({ mode }: AuthFormProps) {
         router.refresh();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      const message = err instanceof Error ? err.message : 'Something went wrong';
+      // Make common Supabase errors more user-friendly
+      if (message.includes('Email not confirmed')) {
+        setError('Your email is not confirmed yet. Check your inbox for a confirmation link.');
+      } else if (message.includes('Invalid login credentials')) {
+        setError('Wrong email or password. Please try again.');
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -78,10 +102,28 @@ export function AuthForm({ mode }: AuthFormProps) {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
               <CheckCircle className="h-8 w-8 text-emerald-500" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Account created!</h2>
-            <p className="text-muted-foreground text-sm">
-              Setting up your account...
-            </p>
+            {needsConfirmation ? (
+              <>
+                <h2 className="text-xl font-semibold mb-2">Check your email</h2>
+                <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+                  We sent a confirmation link to <strong className="text-foreground">{email}</strong>.
+                  Click the link to activate your account, then come back to sign in.
+                </p>
+                <Link
+                  href="/login"
+                  className="inline-block mt-6 text-sm font-medium text-primary hover:underline underline-offset-4"
+                >
+                  Go to sign in
+                </Link>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-semibold mb-2">Account created!</h2>
+                <p className="text-muted-foreground text-sm">
+                  Setting up your account...
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
