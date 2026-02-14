@@ -29,6 +29,7 @@ import {
   ChevronRight,
   AlertCircle,
   PhoneForwarded,
+  MessageCircle,
 } from 'lucide-react';
 import type { Task } from '@/types';
 
@@ -205,6 +206,7 @@ function AnimatedNumber({ value }: { value: number }) {
 export function DashboardHome({ userName, recentTasks, stats }: DashboardHomeProps) {
   const [taskText, setTaskText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
   const router = useRouter();
   const firstName = userName.split(' ')[0] || 'there';
 
@@ -213,15 +215,12 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
       ? Math.round((stats.successful_calls / stats.total_calls) * 100)
       : 0;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!taskText.trim() || loading) return;
-    setLoading(true);
+  async function createTask(text: string) {
     try {
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input_text: taskText }),
+        body: JSON.stringify({ input_text: text }),
       });
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
@@ -238,12 +237,21 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
       toast.error('Failed to create task', {
         description: message,
       });
-      setLoading(false);
     }
   }
 
-  function handleQuickAction(prompt: string) {
-    setTaskText(prompt);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!taskText.trim() || loading) return;
+    setLoading(true);
+    await createTask(taskText.trim());
+    setLoading(false);
+  }
+
+  async function handleQuickAction(action: typeof QUICK_ACTIONS[0]) {
+    setQuickActionLoading(action.label);
+    await createTask(action.prompt);
+    setQuickActionLoading(null);
   }
 
   const callCounts = recentTasks.reduce<Record<string, number>>((acc, task) => {
@@ -258,7 +266,6 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
     <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 space-y-10">
       {/* Hero: Greeting + Input */}
       <div className="relative">
-        {/* Gradient background decoration */}
         <div className="absolute inset-0 -m-4 rounded-3xl bg-gradient-to-br from-primary/[0.04] via-primary/[0.02] to-transparent dark:from-primary/[0.08] dark:via-primary/[0.03] pointer-events-none" />
         <div className="relative">
           <div className="mb-6">
@@ -266,10 +273,14 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
               {getGreeting()}
             </p>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-              {firstName}, what can I call about?
+              {isNewUser
+                ? `${firstName}, let\u2019s make your first call`
+                : `${firstName}, what can I call about?`}
             </h1>
             <p className="text-muted-foreground mt-2 text-[15px]">
-              Describe your task and I&apos;ll handle every phone call from start to finish.
+              {isNewUser
+                ? 'Type what you need below, or tap a quick action to try it out instantly.'
+                : 'Describe your task and I\u2019ll handle every phone call from start to finish.'}
             </p>
           </div>
 
@@ -277,10 +288,12 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
             <fieldset disabled={loading} className="relative">
               <div className="relative rounded-2xl border-2 border-border/60 bg-background shadow-sm shadow-black/[0.03] transition-all duration-200 focus-within:border-primary/40 focus-within:shadow-md focus-within:shadow-primary/[0.06]">
                 <Textarea
-                  placeholder="e.g. Book a dentist appointment for next Tuesday afternoon..."
+                  placeholder={isNewUser
+                    ? 'Try: "Book a dentist appointment for next Tuesday afternoon"'
+                    : 'e.g. Book a dentist appointment for next Tuesday afternoon...'}
                   value={taskText}
                   onChange={(e) => setTaskText(e.target.value)}
-                  className="min-h-[120px] border-0 bg-transparent px-5 pt-5 pb-16 text-[15px] leading-relaxed resize-none shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
+                  className="min-h-[100px] border-0 bg-transparent px-5 pt-5 pb-16 text-[15px] leading-relaxed resize-none shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                       handleSubmit(e);
@@ -321,35 +334,50 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions — one click creates a task */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Zap className="h-4 w-4 text-primary/60" />
           <h2 className="text-sm font-semibold text-foreground/70 tracking-wide uppercase">
-            Quick actions
+            {isNewUser ? 'Try one of these' : 'Quick actions'}
           </h2>
+          {isNewUser && (
+            <Badge variant="secondary" className="text-[10px] font-medium ml-1">
+              One click to start
+            </Badge>
+          )}
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {QUICK_ACTIONS.map((action) => (
-            <button
-              key={action.label}
-              onClick={() => handleQuickAction(action.prompt)}
-              className={`group relative flex flex-col gap-3 rounded-2xl border border-border/50 bg-gradient-to-br ${action.gradient} p-4 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-black/[0.04] hover:border-border active:scale-[0.98] dark:hover:shadow-black/[0.15]`}
-            >
-              <div
-                className={`flex h-11 w-11 items-center justify-center rounded-xl ${action.iconBg} transition-transform duration-200 group-hover:scale-110`}
+          {QUICK_ACTIONS.map((action) => {
+            const isActionLoading = quickActionLoading === action.label;
+            return (
+              <button
+                key={action.label}
+                onClick={() => handleQuickAction(action)}
+                disabled={!!quickActionLoading || loading}
+                className={`group relative flex flex-col gap-3 rounded-2xl border border-border/50 bg-gradient-to-br ${action.gradient} p-4 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-black/[0.04] hover:border-border active:scale-[0.98] dark:hover:shadow-black/[0.15] disabled:opacity-60 disabled:hover:scale-100`}
               >
-                <action.icon className={`h-5 w-5 ${action.iconColor}`} />
-              </div>
-              <div>
-                <span className="text-sm font-semibold block">{action.label}</span>
-                <span className="text-xs text-muted-foreground mt-0.5 block">
-                  {action.description}
-                </span>
-              </div>
-              <ArrowUpRight className="absolute top-3 right-3 h-3.5 w-3.5 text-muted-foreground/30 transition-all duration-200 group-hover:text-muted-foreground/60 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-            </button>
-          ))}
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl ${action.iconBg} transition-transform duration-200 group-hover:scale-110`}
+                >
+                  {isActionLoading ? (
+                    <Loader2 className={`h-5 w-5 ${action.iconColor} animate-spin`} />
+                  ) : (
+                    <action.icon className={`h-5 w-5 ${action.iconColor}`} />
+                  )}
+                </div>
+                <div>
+                  <span className="text-sm font-semibold block">
+                    {isActionLoading ? 'Creating...' : action.label}
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-0.5 block">
+                    {action.description}
+                  </span>
+                </div>
+                <ArrowUpRight className="absolute top-3 right-3 h-3.5 w-3.5 text-muted-foreground/30 transition-all duration-200 group-hover:text-muted-foreground/60 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -363,7 +391,6 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
             </h2>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {/* Tasks completed */}
             <Card className="relative overflow-hidden border-border/50">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.06] to-transparent dark:from-emerald-500/[0.1] pointer-events-none" />
               <CardContent className="relative p-5">
@@ -371,33 +398,22 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20">
                     <CheckCircle className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                    <TrendingUp className="h-3 w-3" />
-                    <span className="text-[11px] font-medium">Active</span>
-                  </div>
                 </div>
                 <p className="text-3xl font-bold tracking-tight">
                   <AnimatedNumber value={stats.total_tasks} />
                 </p>
                 <p className="text-xs text-muted-foreground mt-1 font-medium">
-                  Tasks completed
+                  Tasks created
                 </p>
               </CardContent>
             </Card>
 
-            {/* Calls made */}
             <Card className="relative overflow-hidden border-border/50">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.06] to-transparent dark:from-blue-500/[0.1] pointer-events-none" />
               <CardContent className="relative p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 dark:bg-blue-500/20">
                     <PhoneForwarded className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                    <TrendingUp className="h-3 w-3" />
-                    <span className="text-[11px] font-medium">
-                      {stats.total_calls > 0 ? `${(stats.total_calls / Math.max(stats.total_tasks, 1)).toFixed(1)}/task` : '--'}
-                    </span>
                   </div>
                 </div>
                 <p className="text-3xl font-bold tracking-tight">
@@ -409,23 +425,12 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
               </CardContent>
             </Card>
 
-            {/* Success rate */}
             <Card className="relative overflow-hidden border-border/50">
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.06] to-transparent dark:from-violet-500/[0.1] pointer-events-none" />
               <CardContent className="relative p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10 dark:bg-violet-500/20">
                     <Sparkles className="h-4.5 w-4.5 text-violet-600 dark:text-violet-400" />
-                  </div>
-                  <div className="flex items-center gap-1 text-violet-600 dark:text-violet-400">
-                    {successRate >= 80 ? (
-                      <TrendingUp className="h-3 w-3" />
-                    ) : (
-                      <ArrowRight className="h-3 w-3" />
-                    )}
-                    <span className="text-[11px] font-medium">
-                      {successRate >= 80 ? 'Great' : 'Improving'}
-                    </span>
                   </div>
                 </div>
                 <p className="text-3xl font-bold tracking-tight">
@@ -438,17 +443,12 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
               </CardContent>
             </Card>
 
-            {/* Time saved */}
             <Card className="relative overflow-hidden border-border/50">
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.06] to-transparent dark:from-amber-500/[0.1] pointer-events-none" />
               <CardContent className="relative p-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 dark:bg-amber-500/20">
                     <Timer className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
-                    <TrendingUp className="h-3 w-3" />
-                    <span className="text-[11px] font-medium">Saved</span>
                   </div>
                 </div>
                 <p className="text-3xl font-bold tracking-tight">
@@ -492,7 +492,6 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
                 <Link key={task.id} href={`/tasks/${task.id}`}>
                   <Card className="group relative overflow-hidden border-border/50 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] hover:border-border dark:hover:shadow-black/[0.15]">
                     <CardContent className="p-4 flex items-center gap-4">
-                      {/* Status icon */}
                       <div
                         className={`flex h-10 w-10 items-center justify-center rounded-xl ${statusConfig.bg} ring-1 ${statusConfig.ringColor} shrink-0 transition-transform duration-200 group-hover:scale-105`}
                       >
@@ -503,7 +502,6 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
                         />
                       </div>
 
-                      {/* Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="text-sm font-medium truncate">
@@ -525,7 +523,6 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
                         </div>
                       </div>
 
-                      {/* Right side: status + time */}
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <Badge
                           variant="secondary"
@@ -543,7 +540,6 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
                         </span>
                       </div>
 
-                      {/* Hover chevron */}
                       <ChevronRight className="h-4 w-4 text-muted-foreground/0 transition-all duration-200 group-hover:text-muted-foreground/40 group-hover:translate-x-0.5 shrink-0" />
                     </CardContent>
                   </Card>
@@ -554,44 +550,88 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
         </div>
       )}
 
-      {/* Empty State for New Users */}
+      {/* New User Welcome */}
       {isNewUser && (
         <div className="relative">
-          <div className="absolute inset-0 -m-2 rounded-3xl bg-gradient-to-br from-primary/[0.03] via-transparent to-primary/[0.02] pointer-events-none" />
-          <Card className="relative overflow-hidden border-dashed border-2 border-border/40">
+          <Card className="relative overflow-hidden border-border/50">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/[0.05] to-transparent rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-primary/[0.04] to-transparent rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" />
-            <CardContent className="relative py-16 px-6 text-center">
-              <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/10 shadow-lg shadow-primary/[0.08]">
-                <Sparkles className="h-9 w-9 text-primary" />
-              </div>
-              <h3 className="text-xl font-bold mb-2 tracking-tight">
-                Your AI phone assistant is ready
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto leading-relaxed mb-8">
-                Tell me what you need -- booking appointments, checking availability,
-                making reservations -- and I&apos;ll handle every phone call for you.
-                Just describe the task above and I&apos;ll take it from there.
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground/70">
-                <span className="flex items-center gap-1.5">
-                  <div className="h-6 w-6 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                    <CheckCircle className="h-3 w-3 text-emerald-500" />
+            <CardContent className="relative py-10 px-6">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                {/* Left: how it works */}
+                <div className="flex flex-col items-center md:items-start gap-4 md:w-1/2">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/10">
+                      <MessageCircle className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold tracking-tight">
+                        How it works
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        3 simple steps
+                      </p>
+                    </div>
                   </div>
-                  Plans calls automatically
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <div className="h-6 w-6 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                    <PhoneCall className="h-3 w-3 text-blue-500" />
+
+                  <div className="space-y-4 w-full">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                        1
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Tell me what you need</p>
+                        <p className="text-xs text-muted-foreground">
+                          &quot;Book a dentist appointment for next week&quot;
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                        2
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">I plan the calls</p>
+                        <p className="text-xs text-muted-foreground">
+                          I find the right numbers and figure out what to say
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                        3
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Calls happen automatically</p>
+                        <p className="text-xs text-muted-foreground">
+                          I make the calls and report back with results
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  Makes calls on your behalf
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <div className="h-6 w-6 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                    <Sparkles className="h-3 w-3 text-violet-500" />
+                </div>
+
+                {/* Right: capabilities */}
+                <div className="md:w-1/2 w-full">
+                  <div className="rounded-2xl bg-muted/30 border border-border/40 p-5 space-y-3">
+                    <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">
+                      What I can handle
+                    </p>
+                    {[
+                      { icon: Phone, text: 'Navigate phone menus and IVR systems' },
+                      { icon: Clock, text: 'Wait on hold so you don\'t have to' },
+                      { icon: PhoneCall, text: 'Make up to 5 calls at the same time' },
+                      { icon: Sparkles, text: 'Adapt to unexpected situations' },
+                      { icon: CheckCircle, text: 'Auto-retry if a line is busy' },
+                    ].map((item) => (
+                      <div key={item.text} className="flex items-center gap-2.5">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10">
+                          <item.icon className="h-3 w-3 text-primary" />
+                        </div>
+                        <span className="text-sm text-muted-foreground">{item.text}</span>
+                      </div>
+                    ))}
                   </div>
-                  Reports back with results
-                </span>
+                </div>
               </div>
             </CardContent>
           </Card>
