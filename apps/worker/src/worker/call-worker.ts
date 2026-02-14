@@ -1,5 +1,4 @@
 import { Worker, type Job } from 'bullmq';
-import Redis from 'ioredis';
 import { initiateCall } from '../services/call-manager.js';
 import { sessionStore, type CallSessionData } from '../services/session-store.js';
 import { supabaseAdmin } from '../services/supabase.js';
@@ -24,9 +23,10 @@ interface CallJobData {
 let worker: Worker<CallJobData> | null = null;
 
 export function startWorker() {
-  const connection = new Redis(config.REDIS_URL, {
-    maxRetriesPerRequest: null,
-  });
+  const connection = {
+    url: config.REDIS_URL,
+    maxRetriesPerRequest: null as null,
+  };
 
   worker = new Worker<CallJobData>(
     QUEUE_NAME,
