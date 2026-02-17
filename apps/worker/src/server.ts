@@ -4,6 +4,7 @@ import fastifyFormbody from '@fastify/formbody';
 import { twimlRoute } from './routes/twiml.js';
 import { websocketRoute } from './routes/websocket.js';
 import { statusCallbackRoute } from './routes/status-callback.js';
+import { enqueueCallRoute } from './routes/enqueue-call.js';
 import { startWorker } from './worker/call-worker.js';
 import { config } from './config.js';
 
@@ -24,6 +25,7 @@ fastify.register(fastifyFormbody);
 fastify.register(twimlRoute);
 fastify.register(websocketRoute);
 fastify.register(statusCallbackRoute);
+fastify.register(enqueueCallRoute);
 
 // Health check
 fastify.get('/health', async () => ({

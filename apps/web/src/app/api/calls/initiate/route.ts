@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
-import { callQueue } from '@/lib/queue/client';
 import type { CallPlan } from '@/types';
+
+const WORKER_BASE_URL = process.env.WORKER_BASE_URL || 'http://localhost:8080';
 
 export async function POST(request: Request) {
   try {
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
       .eq('id', user.id)
       .single();
 
-    // Create call records and enqueue jobs
+    // Create call records and enqueue via worker HTTP endpoint
     const callRecords = [];
     for (const planned of plan.calls) {
       const { data: call, error: callError } = await supabase
@@ -88,17 +89,29 @@ export async function POST(request: Request) {
 
       callRecords.push(call);
 
-      await callQueue.add('make-call', {
-        callId: call.id,
-        taskId,
-        userId: user.id,
-        businessName: planned.business_name,
-        phoneNumber: planned.phone_number,
-        purpose: planned.purpose,
-        questions: planned.questions,
-        context: planned.context,
-        userProfile: profile || {},
+      // Enqueue via worker HTTP endpoint instead of direct BullMQ
+      const enqueueRes = await fetch(`${WORKER_BASE_URL}/enqueue-call`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({
+          callId: call.id,
+          taskId,
+          userId: user.id,
+          businessName: planned.business_name,
+          phoneNumber: planned.phone_number,
+          purpose: planned.purpose,
+          questions: planned.questions,
+          context: planned.context,
+          userProfile: profile || {},
+        }),
       });
+
+      if (!enqueueRes.ok) {
+        console.error('Failed to enqueue call via worker:', await enqueueRes.text());
+      }
     }
 
     if (callRecords.length === 0) {
