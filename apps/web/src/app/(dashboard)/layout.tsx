@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { NavSidebar } from '@/components/nav-sidebar';
 import { NotificationBell } from '@/components/notification-bell';
 
@@ -15,15 +16,21 @@ export default async function DashboardLayout({
 
   if (!user) redirect('/login');
 
+  // Check if we're on the onboarding page — render without sidebar
+  const headersList = await headers();
+  const pathname = headersList.get('x-pathname') || '';
+  const isOnboarding = pathname.startsWith('/onboarding');
+
+  // For onboarding, render children without dashboard chrome
+  if (isOnboarding) {
+    return <>{children}</>;
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single();
-
-  if (profile && !profile.onboarding_completed) {
-    redirect('/onboarding');
-  }
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: '#FFFFFF' }}>
