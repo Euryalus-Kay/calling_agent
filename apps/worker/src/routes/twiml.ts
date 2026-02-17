@@ -14,12 +14,13 @@ export async function twimlRoute(fastify: FastifyInstance) {
     <ConversationRelay
       url="${wsUrl}"
       ttsProvider="ElevenLabs"
-      voice="cgSgspJ2msm6clMCkdW9"
+      voice="JBFqnCBsd6RMkjVDRZzb"
       transcriptionProvider="Deepgram"
       speechModel="nova-3-general"
-      welcomeGreeting="Hello, I'm an AI assistant calling on behalf of a customer. I have a few questions if you have a moment."
+      welcomeGreeting="Hi there! I'm an AI assistant calling on behalf of someone who needs a bit of help. Do you have a moment?"
       interruptible="true"
       interruptByDtmf="true"
+      dtmfDetection="true"
     />
   </Connect>
 </Response>`;

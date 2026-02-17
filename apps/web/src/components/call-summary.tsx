@@ -4,6 +4,25 @@ import { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import type { Call } from '@/types';
 
+/** Strip markdown formatting characters from text */
+function cleanMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')   // **bold** → bold
+    .replace(/\*(.+?)\*/g, '$1')        // *italic* → italic
+    .replace(/^#{1,6}\s+/gm, '')        // ## heading → heading
+    .replace(/^-\s+/gm, '')             // - item → item
+    .replace(/\n{3,}/g, '\n\n');         // collapse 3+ newlines
+}
+
+/** Parse cleaned text into paragraphs */
+function parseParagraphs(raw: string): string[] {
+  const cleaned = cleanMarkdown(raw).trim();
+  return cleaned
+    .split(/\n{2,}/)
+    .map((p) => p.replace(/\n/g, ' ').trim())
+    .filter(Boolean);
+}
+
 interface CallSummaryProps {
   taskId: string;
   calls: Call[];
@@ -122,16 +141,17 @@ export function CallSummary({ taskId, calls }: CallSummaryProps) {
           Summary
         </h3>
       </div>
-      <div style={{ padding: '0 20px 20px' }}>
-        <p style={{
-          fontSize: 14,
-          whiteSpace: 'pre-line',
-          lineHeight: 1.6,
-          color: '#37352F',
-          margin: 0,
-        }}>
-          {summary}
-        </p>
+      <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {parseParagraphs(summary).map((paragraph, idx) => (
+          <p key={idx} style={{
+            fontSize: 14,
+            lineHeight: 1.7,
+            color: '#37352F',
+            margin: 0,
+          }}>
+            {paragraph}
+          </p>
+        ))}
       </div>
     </div>
   );

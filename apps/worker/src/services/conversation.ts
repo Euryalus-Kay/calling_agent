@@ -52,7 +52,7 @@ export class ConversationManager {
 
     const response = await this.anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
+      max_tokens: 200,
       system: systemPrompt,
       messages: this.messages,
     });
@@ -255,8 +255,8 @@ export class ConversationManager {
       return `Called ${this.callData.businessName}. No specific answers were obtained.`;
     }
     const answerLines = Array.from(this.answeredQuestions.entries())
-      .map(([q, a]) => `- ${q}: ${a}`)
+      .map(([q, a]) => `${q} — ${a}`)
       .join('\n');
-    return `Called ${this.callData.businessName}.\n\nFindings:\n${answerLines}`;
+    return `Called ${this.callData.businessName}.\n\n${answerLines}`;
   }
 }

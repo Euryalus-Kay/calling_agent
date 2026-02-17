@@ -19,6 +19,44 @@ import {
 } from 'lucide-react';
 import type { Call } from '@/types';
 
+/** Strip markdown formatting characters from text */
+function cleanMarkdown(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')   // **bold** → bold
+    .replace(/\*(.+?)\*/g, '$1')        // *italic* → italic
+    .replace(/^#{1,6}\s+/gm, '')        // ## heading → heading
+    .replace(/^-\s+/gm, '')             // - item → item
+    .replace(/\n{3,}/g, '\n\n');         // collapse 3+ newlines
+}
+
+/** Parse result_summary into a header line and Q&A pairs */
+function parseResultSummary(raw: string): { header: string | null; pairs: { question: string; answer: string }[] } {
+  const cleaned = cleanMarkdown(raw).trim();
+  const lines = cleaned.split('\n').map((l) => l.trim()).filter(Boolean);
+
+  if (lines.length === 0) return { header: null, pairs: [] };
+
+  // First line that does NOT contain " — " is the header
+  let header: string | null = null;
+  const pairs: { question: string; answer: string }[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // Check for Q&A separator (em dash or double hyphen)
+    const sepMatch = line.match(/^(.+?)\s*[—–]\s*(.+)$/);
+    if (sepMatch) {
+      pairs.push({ question: sepMatch[1].trim(), answer: sepMatch[2].trim() });
+    } else if (header === null && i === 0) {
+      header = line;
+    } else {
+      // Treat as a standalone answer line (no question)
+      pairs.push({ question: '', answer: line });
+    }
+  }
+
+  return { header, pairs };
+}
+
 const statusConfig: Record<
   string,
   { label: string; color: string; bgColor: string; icon: React.ElementType; description?: string }
@@ -418,36 +456,74 @@ export function CallCard({ call }: { call: Call }) {
           )}
 
           {/* Result */}
-          {call.result_summary && (
-            <div style={{
-              borderRadius: 6,
-              backgroundColor: 'rgba(77,171,154,0.06)',
-              border: '1px solid rgba(77,171,154,0.2)',
-              padding: 12,
-            }}>
-              <p style={{
-                fontSize: 12,
-                fontWeight: 500,
-                color: '#4DAB9A',
-                marginBottom: 6,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
+          {call.result_summary && (() => {
+            const { header, pairs } = parseResultSummary(call.result_summary);
+            return (
+              <div style={{
+                borderRadius: 6,
+                backgroundColor: 'rgba(77,171,154,0.06)',
+                border: '1px solid rgba(77,171,154,0.2)',
+                padding: 12,
               }}>
-                <CheckCircle style={{ height: 14, width: 14 }} />
-                What I found
-              </p>
-              <p style={{
-                fontSize: 14,
-                color: '#37352F',
-                whiteSpace: 'pre-line',
-                lineHeight: 1.6,
-                margin: 0,
-              }}>
-                {call.result_summary}
-              </p>
-            </div>
-          )}
+                <p style={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: '#4DAB9A',
+                  marginBottom: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}>
+                  <CheckCircle style={{ height: 14, width: 14 }} />
+                  What I found
+                </p>
+
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E3E2DE',
+                  borderRadius: 6,
+                  padding: '10px 14px',
+                }}>
+                  {header && (
+                    <p style={{
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: '#37352F',
+                      margin: 0,
+                      paddingBottom: pairs.length > 0 ? 10 : 0,
+                      borderBottom: pairs.length > 0 ? '1px solid #F0EFEC' : 'none',
+                    }}>
+                      {header}
+                    </p>
+                  )}
+                  {pairs.length > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                      paddingTop: header ? 10 : 0,
+                    }}>
+                      {pairs.map((pair, idx) => (
+                        <div key={idx} style={{ lineHeight: 1.5 }}>
+                          {pair.question && (
+                            <span style={{ fontSize: 13, color: '#787774' }}>
+                              {pair.question}
+                            </span>
+                          )}
+                          {pair.question && pair.answer && (
+                            <span style={{ fontSize: 13, color: '#9B9A97', margin: '0 6px' }}>&mdash;</span>
+                          )}
+                          <span style={{ fontSize: 13, color: '#37352F', fontWeight: 500 }}>
+                            {pair.answer}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Error */}
           {call.error && (
