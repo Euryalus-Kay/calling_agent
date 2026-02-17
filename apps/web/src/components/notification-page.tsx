@@ -3,11 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import {
   Bell,
   Phone,
@@ -18,7 +13,6 @@ import {
   CheckCheck,
   Inbox,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { Notification } from '@/types';
 
 interface NotificationPageProps {
@@ -27,7 +21,7 @@ interface NotificationPageProps {
 
 const NOTIFICATION_ICONS: Record<
   Notification['type'],
-  React.ComponentType<{ className?: string }>
+  React.ComponentType<{ className?: string; style?: React.CSSProperties }>
 > = {
   call_completed: Phone,
   call_failed: PhoneOff,
@@ -42,6 +36,14 @@ const TYPE_LABELS: Record<Notification['type'], string> = {
   task_completed: 'Task Completed',
   scheduled_reminder: 'Reminder',
   system: 'System',
+};
+
+const typeIconColors: Record<Notification['type'], { bg: string; color: string }> = {
+  call_completed: { bg: 'rgba(77,171,154,0.08)', color: '#4DAB9A' },
+  call_failed: { bg: 'rgba(235,87,87,0.08)', color: '#EB5757' },
+  task_completed: { bg: 'rgba(35,131,226,0.08)', color: '#2383E2' },
+  scheduled_reminder: { bg: 'rgba(203,145,47,0.08)', color: '#CB912F' },
+  system: { bg: 'rgba(120,119,116,0.06)', color: '#787774' },
 };
 
 function formatDate(dateString: string): string {
@@ -154,140 +156,195 @@ export function NotificationPage({ userId }: NotificationPageProps) {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ maxWidth: 768, margin: '0 auto', padding: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#37352F', margin: 0 }}>Notifications</h1>
+          <p style={{ fontSize: 14, color: '#787774', marginTop: 4 }}>
             {unreadCount > 0
               ? `You have ${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}.`
               : 'You\'re all caught up.'}
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={handleMarkAllAsRead}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#37352F',
+              background: '#FFFFFF',
+              border: '1px solid #E3E2DE',
+              borderRadius: 8,
+              cursor: 'pointer',
+            }}
           >
-            <CheckCheck className="h-4 w-4" />
+            <CheckCheck style={{ height: 16, width: 16 }} />
             Mark all as read
-          </Button>
+          </button>
         )}
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 mb-4">
-        <Button
-          variant={filter === 'all' ? 'secondary' : 'ghost'}
-          size="sm"
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+        <button
           onClick={() => setFilter('all')}
+          style={{
+            padding: '4px 12px',
+            fontSize: 13,
+            fontWeight: filter === 'all' ? 600 : 400,
+            color: filter === 'all' ? '#37352F' : '#787774',
+            background: filter === 'all' ? '#EFEFEF' : 'transparent',
+            border: 'none',
+            borderRadius: 6,
+            cursor: 'pointer',
+          }}
         >
           All
-        </Button>
-        <Button
-          variant={filter === 'unread' ? 'secondary' : 'ghost'}
-          size="sm"
+        </button>
+        <button
           onClick={() => setFilter('unread')}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 12px',
+            fontSize: 13,
+            fontWeight: filter === 'unread' ? 600 : 400,
+            color: filter === 'unread' ? '#37352F' : '#787774',
+            background: filter === 'unread' ? '#EFEFEF' : 'transparent',
+            border: 'none',
+            borderRadius: 6,
+            cursor: 'pointer',
+          }}
         >
           Unread
           {unreadCount > 0 && (
-            <Badge variant="default" className="ml-1.5 h-5 text-[11px]">
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 20,
+              minWidth: 20,
+              padding: '0 6px',
+              fontSize: 11,
+              fontWeight: 600,
+              color: '#FFFFFF',
+              background: '#2383E2',
+              borderRadius: 10,
+            }}>
               {unreadCount}
-            </Badge>
+            </span>
           )}
-        </Button>
+        </button>
       </div>
 
       {/* Notification list */}
       {loading ? (
-        <Card>
-          <div className="divide-y">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex gap-4 p-4">
-                <Skeleton className="h-10 w-10 rounded-full shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-1/3" />
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-1/4" />
-                </div>
+        <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} style={{ display: 'flex', gap: 16, padding: 16, borderBottom: i < 4 ? '1px solid #E3E2DE' : 'none' }}>
+              <div style={{ height: 40, width: 40, borderRadius: '50%', background: '#F7F6F3', flexShrink: 0 }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ height: 16, width: '33%', background: '#F7F6F3', borderRadius: 4 }} />
+                <div style={{ height: 12, width: '100%', background: '#F7F6F3', borderRadius: 4 }} />
+                <div style={{ height: 12, width: '25%', background: '#F7F6F3', borderRadius: 4 }} />
               </div>
-            ))}
-          </div>
-        </Card>
+            </div>
+          ))}
+        </div>
       ) : notifications.length === 0 ? (
-        <Card>
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <Inbox className="h-12 w-12 text-muted-foreground/30 mb-3" />
-            <h3 className="font-medium text-muted-foreground">
+        <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 16px', textAlign: 'center' }}>
+            <Inbox style={{ height: 48, width: 48, color: '#E3E2DE', marginBottom: 12 }} />
+            <h3 style={{ fontWeight: 500, color: '#787774', margin: '0 0 4px' }}>
               {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
             </h3>
-            <p className="text-sm text-muted-foreground/70 mt-1 max-w-sm">
+            <p style={{ fontSize: 14, color: '#787774', maxWidth: 360, margin: 0, opacity: 0.7 }}>
               {filter === 'unread'
                 ? 'All caught up! Switch to "All" to see past notifications.'
                 : 'Notifications about your calls, tasks, and reminders will appear here.'}
             </p>
           </div>
-        </Card>
+        </div>
       ) : (
-        <Card>
-          <div className="divide-y">
-            {notifications.map((notification) => {
-              const Icon = NOTIFICATION_ICONS[notification.type] || Info;
-              return (
-                <button
-                  key={notification.id}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={cn(
-                    'flex w-full items-start gap-4 p-4 text-left transition-colors hover:bg-muted/50',
-                    !notification.read && 'bg-primary/[0.03]'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
-                      notification.type === 'call_failed'
-                        ? 'bg-destructive/10 text-destructive'
-                        : notification.type === 'call_completed'
-                          ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                          : notification.type === 'task_completed'
-                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                            : notification.type === 'scheduled_reminder'
-                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                              : 'bg-muted text-muted-foreground'
+        <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)', overflow: 'hidden' }}>
+          {notifications.map((notification, i) => {
+            const Icon = NOTIFICATION_ICONS[notification.type] || Info;
+            const iconColor = typeIconColors[notification.type] || typeIconColors.system;
+            return (
+              <button
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  alignItems: 'flex-start',
+                  gap: 16,
+                  padding: 16,
+                  textAlign: 'left',
+                  background: !notification.read ? 'rgba(35,131,226,0.02)' : 'transparent',
+                  border: 'none',
+                  borderBottom: i < notifications.length - 1 ? '1px solid #E3E2DE' : 'none',
+                  cursor: 'pointer',
+                  transition: 'background 120ms ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#F7F6F3'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = !notification.read ? 'rgba(35,131,226,0.02)' : 'transparent'; }}
+              >
+                <div style={{
+                  marginTop: 2,
+                  display: 'flex',
+                  height: 40,
+                  width: 40,
+                  flexShrink: 0,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: '50%',
+                  background: iconColor.bg,
+                  color: iconColor.color,
+                }}>
+                  <Icon style={{ height: 20, width: 20 }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: 14,
+                      fontWeight: !notification.read ? 600 : 500,
+                      color: '#37352F',
+                    }}>
+                      {notification.title}
+                    </span>
+                    {!notification.read && (
+                      <span style={{ height: 8, width: 8, flexShrink: 0, borderRadius: '50%', background: '#2383E2' }} />
                     )}
-                  >
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span
-                        className={cn(
-                          'text-sm',
-                          !notification.read ? 'font-semibold' : 'font-medium'
-                        )}
-                      >
-                        {notification.title}
-                      </span>
-                      {!notification.read && (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
-                      )}
-                      <Badge variant="outline" className="text-[10px] h-4 ml-auto">
-                        {TYPE_LABELS[notification.type]}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {notification.body}
-                    </p>
-                    <span className="text-xs text-muted-foreground/70 mt-1.5 block">
-                      {formatDate(notification.created_at)}
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 500,
+                      padding: '1px 6px',
+                      borderRadius: 4,
+                      border: '1px solid #E3E2DE',
+                      color: '#787774',
+                      marginLeft: 'auto',
+                    }}>
+                      {TYPE_LABELS[notification.type]}
                     </span>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        </Card>
+                  <p style={{ fontSize: 14, color: '#787774', marginTop: 4, margin: '4px 0 0' }}>
+                    {notification.body}
+                  </p>
+                  <span style={{ fontSize: 12, color: '#787774', marginTop: 6, display: 'block', opacity: 0.7 }}>
+                    {formatDate(notification.created_at)}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       )}
     </div>
   );

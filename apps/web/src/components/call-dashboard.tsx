@@ -5,10 +5,7 @@ import { useRealtimeCalls } from '@/hooks/use-realtime-calls';
 import { PlanningChat } from './planning-chat';
 import { CallCard } from './call-card';
 import { CallSummary } from './call-summary';
-import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Phone, Clock, CheckCircle, Pause } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { Task, ChatMessage, CallPlan } from '@/types';
 
 interface CallDashboardProps {
@@ -44,44 +41,132 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4 md:p-6">
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px' }}>
+      {/* Skeleton pulse animation */}
+      <style>{`
+        @keyframes notionPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+        @keyframes notionPing {
+          0% { transform: scale(1); opacity: 0.6; }
+          75%, 100% { transform: scale(2); opacity: 0; }
+        }
+      `}</style>
+
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-xl font-bold mb-1">
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{
+          fontSize: 20,
+          fontWeight: 700,
+          marginBottom: 4,
+          color: '#37352F',
+          lineHeight: 1.3,
+        }}>
           {stats.allDone ? 'Task Complete' : 'Working on it'}
         </h1>
-        <p className="text-sm text-muted-foreground mb-4">{task.input_text}</p>
+        <p style={{
+          fontSize: 14,
+          color: '#787774',
+          marginBottom: 16,
+          lineHeight: 1.5,
+        }}>
+          {task.input_text}
+        </p>
 
         {/* Progress and live stats */}
         {calls.length > 0 && !stats.allDone && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <Progress value={stats.progress} className="flex-1" />
-              <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {/* Progress bar */}
+              <div style={{
+                flex: 1,
+                height: 6,
+                backgroundColor: '#E3E2DE',
+                borderRadius: 3,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: `${stats.progress}%`,
+                  height: '100%',
+                  backgroundColor: '#2383E2',
+                  borderRadius: 3,
+                  transition: 'width 0.5s ease',
+                }} />
+              </div>
+              <span style={{
+                fontSize: 12,
+                color: '#787774',
+                fontVariantNumeric: 'tabular-nums',
+                flexShrink: 0,
+              }}>
                 {stats.done}/{stats.total}
               </span>
             </div>
 
             {/* Live status chips */}
-            <div className="flex flex-wrap gap-2">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {stats.active > 0 && (
-                <div className="flex items-center gap-1.5 rounded-full bg-green-50 dark:bg-green-950 px-3 py-1 text-xs text-green-700 dark:text-green-300">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-60" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(77,171,154,0.06)',
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  color: '#4DAB9A',
+                }}>
+                  <span style={{ position: 'relative', display: 'flex', height: 8, width: 8 }}>
+                    <span style={{
+                      position: 'absolute',
+                      display: 'inline-flex',
+                      height: '100%',
+                      width: '100%',
+                      borderRadius: '50%',
+                      backgroundColor: '#4DAB9A',
+                      opacity: 0.6,
+                      animation: 'notionPing 1s cubic-bezier(0,0,0.2,1) infinite',
+                    }} />
+                    <span style={{
+                      position: 'relative',
+                      display: 'inline-flex',
+                      height: 8,
+                      width: 8,
+                      borderRadius: '50%',
+                      backgroundColor: '#4DAB9A',
+                    }} />
                   </span>
                   {stats.active} active call{stats.active !== 1 ? 's' : ''}
                 </div>
               )}
               {stats.onHold > 0 && (
-                <div className="flex items-center gap-1.5 rounded-full bg-yellow-50 dark:bg-yellow-950 px-3 py-1 text-xs text-yellow-700 dark:text-yellow-300">
-                  <Pause className="h-3 w-3" />
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(203,145,47,0.06)',
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  color: '#CB912F',
+                }}>
+                  <Pause style={{ height: 12, width: 12 }} />
                   {stats.onHold} on hold
                 </div>
               )}
               {stats.done > 0 && stats.done < stats.total && (
-                <div className="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
-                  <CheckCircle className="h-3 w-3" />
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(120,119,116,0.06)',
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  color: '#787774',
+                }}>
+                  <CheckCircle style={{ height: 12, width: 12 }} />
                   {stats.done} done
                 </div>
               )}
@@ -92,22 +177,47 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
 
       {/* Call cards */}
       {loading ? (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            <div
+              key={i}
+              style={{
+                height: 80,
+                width: '100%',
+                borderRadius: 8,
+                backgroundColor: '#F7F6F3',
+                animation: 'notionPulse 2s cubic-bezier(0.4,0,0.6,1) infinite',
+              }}
+            />
           ))}
         </div>
       ) : calls.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted mb-4">
-            <Phone className="h-5 w-5 text-muted-foreground" />
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '64px 0',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            display: 'flex',
+            height: 48,
+            width: 48,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 8,
+            backgroundColor: '#F7F6F3',
+            marginBottom: 16,
+          }}>
+            <Phone style={{ height: 20, width: 20, color: '#787774' }} />
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p style={{ fontSize: 14, color: '#787774' }}>
             Calls are being prepared...
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {calls.map((call) => (
             <CallCard key={call.id} call={call} />
           ))}

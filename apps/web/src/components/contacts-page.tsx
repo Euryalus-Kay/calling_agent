@@ -3,12 +3,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -17,7 +11,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import {
   Search,
   Plus,
@@ -31,7 +24,6 @@ import {
   BookOpen,
   X,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { Contact } from '@/types';
 
 interface ContactsPageProps {
@@ -50,12 +42,12 @@ const CATEGORIES: { value: Category | 'all'; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-const categoryColors: Record<Category, string> = {
-  personal: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  business: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  medical: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  government: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300',
+const categoryColors: Record<Category, { bg: string; text: string }> = {
+  personal: { bg: 'rgba(35,131,226,0.06)', text: '#2383E2' },
+  business: { bg: 'rgba(203,145,47,0.06)', text: '#CB912F' },
+  medical: { bg: 'rgba(235,87,87,0.06)', text: '#EB5757' },
+  government: { bg: 'rgba(120,119,116,0.08)', text: '#787774' },
+  other: { bg: 'rgba(120,119,116,0.06)', text: '#787774' },
 };
 
 const emptyFormState = {
@@ -67,6 +59,48 @@ const emptyFormState = {
   notes: '',
   is_favorite: false,
 };
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: 36,
+  padding: '0 12px',
+  fontSize: 14,
+  color: '#37352F',
+  background: '#FFFFFF',
+  border: '1px solid #E3E2DE',
+  borderRadius: 8,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'auto' as const,
+};
+
+const textareaStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  fontSize: 14,
+  color: '#37352F',
+  background: '#FFFFFF',
+  border: '1px solid #E3E2DE',
+  borderRadius: 8,
+  outline: 'none',
+  resize: 'vertical',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+};
+
+function handleFocus(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = '#2383E2';
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(35,131,226,0.15)';
+}
+
+function handleBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = '#E3E2DE';
+  e.currentTarget.style.boxShadow = 'none';
+}
 
 export function ContactsPage({ contacts: initialContacts, userId }: ContactsPageProps) {
   const supabase = createSupabaseBrowserClient();
@@ -221,123 +255,184 @@ export function ContactsPage({ contacts: initialContacts, userId }: ContactsPage
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-4 sm:p-6">
+    <div style={{ maxWidth: 896, margin: '0 auto', padding: '16px 24px' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Contacts</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#37352F', letterSpacing: '-0.01em', margin: 0 }}>Contacts</h1>
+          <p style={{ fontSize: 14, color: '#787774', marginTop: 4 }}>
             {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
           </p>
         </div>
-        <Button onClick={openAddDialog} size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" />
+        <button
+          onClick={openAddDialog}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            fontSize: 14,
+            fontWeight: 500,
+            color: '#FFFFFF',
+            background: '#2383E2',
+            border: 'none',
+            borderRadius: 8,
+            cursor: 'pointer',
+          }}
+        >
+          <Plus style={{ height: 16, width: 16 }} />
           Add Contact
-        </Button>
+        </button>
       </div>
 
       {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', height: 16, width: 16, color: '#787774' }} />
+        <input
           placeholder="Search by name, company, phone, or email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          style={{ ...inputStyle, paddingLeft: 36, paddingRight: search ? 36 : 12 }}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#787774', padding: 0 }}
           >
-            <X className="h-4 w-4" />
+            <X style={{ height: 16, width: 16 }} />
           </button>
         )}
       </div>
 
       {/* Category Tabs */}
-      <Tabs
-        value={activeCategory}
-        onValueChange={(v) => setActiveCategory(v as Category | 'all')}
-        className="mb-6"
-      >
-        <TabsList className="flex-wrap">
-          {CATEGORIES.map((cat) => (
-            <TabsTrigger key={cat.value} value={cat.value}>
-              {cat.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 24 }}>
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.value}
+            onClick={() => setActiveCategory(cat.value)}
+            style={{
+              padding: '4px 12px',
+              fontSize: 13,
+              fontWeight: activeCategory === cat.value ? 600 : 400,
+              color: activeCategory === cat.value ? '#37352F' : '#787774',
+              background: activeCategory === cat.value ? '#EFEFEF' : 'transparent',
+              border: 'none',
+              borderRadius: 6,
+              cursor: 'pointer',
+              transition: 'background 120ms ease',
+            }}
+            onMouseEnter={(e) => { if (activeCategory !== cat.value) e.currentTarget.style.background = '#EFEFEF'; }}
+            onMouseLeave={(e) => { if (activeCategory !== cat.value) e.currentTarget.style.background = 'transparent'; }}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
 
       {/* Contact Grid */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-            <BookOpen className="h-8 w-8 text-muted-foreground" />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', textAlign: 'center' }}>
+          <div style={{ display: 'flex', height: 64, width: 64, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#F7F6F3', marginBottom: 16 }}>
+            <BookOpen style={{ height: 32, width: 32, color: '#787774' }} />
           </div>
-          <h2 className="text-lg font-medium mb-1">
+          <h2 style={{ fontSize: 18, fontWeight: 500, marginBottom: 4, color: '#37352F' }}>
             {contacts.length === 0
               ? 'Your phone book is empty'
               : 'No contacts match your search'}
           </h2>
-          <p className="text-sm text-muted-foreground max-w-sm">
+          <p style={{ fontSize: 14, color: '#787774', maxWidth: 360 }}>
             {contacts.length === 0
               ? 'Add your first contact to keep track of the people and places you call.'
               : 'Try adjusting your search or filter to find who you\'re looking for.'}
           </p>
           {contacts.length === 0 && (
-            <Button onClick={openAddDialog} variant="outline" className="mt-4 gap-1.5">
-              <Plus className="h-4 w-4" />
+            <button
+              onClick={openAddDialog}
+              style={{
+                marginTop: 16,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#37352F',
+                background: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
+              <Plus style={{ height: 16, width: 16 }} />
               Add your first contact
-            </Button>
+            </button>
           )}
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))' }}>
           {filtered.map((contact) => {
             const isExpanded = expandedId === contact.id;
+            const catColor = categoryColors[contact.category];
             return (
-              <Card
+              <div
                 key={contact.id}
-                className={cn(
-                  'transition-all duration-200 cursor-pointer hover:shadow-md',
-                  isExpanded && 'ring-1 ring-primary/20 shadow-md sm:col-span-2'
-                )}
+                style={{
+                  background: '#FFFFFF',
+                  border: `1px solid ${isExpanded ? '#2383E2' : '#E3E2DE'}`,
+                  borderRadius: 8,
+                  boxShadow: isExpanded ? '0 1px 2px rgba(0,0,0,0.06)' : '0 1px 2px rgba(0,0,0,0.06)',
+                  transition: 'border-color 150ms ease, box-shadow 150ms ease',
+                  gridColumn: isExpanded ? '1 / -1' : undefined,
+                }}
               >
-                <CardContent
-                  className="p-4"
+                <div
+                  style={{ padding: 16, cursor: 'pointer' }}
                   onClick={() => setExpandedId(isExpanded ? null : contact.id)}
                 >
-                  <div className="flex items-start gap-3">
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                     {/* Avatar */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                    <div style={{
+                      display: 'flex',
+                      height: 40,
+                      width: 40,
+                      flexShrink: 0,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      background: 'rgba(35,131,226,0.08)',
+                      color: '#2383E2',
+                      fontSize: 14,
+                      fontWeight: 600,
+                    }}>
                       {getInitials(contact.name)}
                     </div>
 
                     {/* Info */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">{contact.name}</span>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            'text-[10px] px-1.5 py-0 border-0',
-                            categoryColors[contact.category]
-                          )}
-                        >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 500, color: '#37352F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{contact.name}</span>
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 500,
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                          background: catColor.bg,
+                          color: catColor.text,
+                        }}>
                           {contact.category}
-                        </Badge>
+                        </span>
                       </div>
                       {contact.company && (
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                          <Building2 className="h-3 w-3" />
-                          <span className="truncate">{contact.company}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, fontSize: 12, color: '#787774' }}>
+                          <Building2 style={{ height: 12, width: 12 }} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{contact.company}</span>
                         </div>
                       )}
                       {contact.phone_number && (
-                        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
-                          <Phone className="h-3 w-3" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, fontSize: 12, color: '#787774' }}>
+                          <Phone style={{ height: 12, width: 12 }} />
                           <span>{contact.phone_number}</span>
                         </div>
                       )}
@@ -349,41 +444,52 @@ export function ContactsPage({ contacts: initialContacts, userId }: ContactsPage
                         e.stopPropagation();
                         toggleFavorite(contact);
                       }}
-                      className="shrink-0 p-1 rounded-md hover:bg-muted transition-colors"
+                      style={{
+                        flexShrink: 0,
+                        padding: 4,
+                        borderRadius: 6,
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'background 120ms ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEFEF'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
                       title={contact.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
                     >
                       <Star
-                        className={cn(
-                          'h-4 w-4 transition-all duration-200',
-                          contact.is_favorite
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-muted-foreground/40 hover:text-amber-400'
-                        )}
+                        style={{
+                          height: 16,
+                          width: 16,
+                          color: contact.is_favorite ? '#CB912F' : '#E3E2DE',
+                          fill: contact.is_favorite ? '#CB912F' : 'none',
+                          transition: 'color 200ms ease, fill 200ms ease',
+                        }}
                       />
                     </button>
                   </div>
 
                   {/* Expanded Section */}
                   {isExpanded && (
-                    <div className="mt-4" onClick={(e) => e.stopPropagation()}>
-                      <Separator className="mb-4" />
+                    <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 16 }}>
+                      <div style={{ height: 1, background: '#E3E2DE', marginBottom: 16 }} />
 
                       {contact.email && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                          <Mail className="h-3.5 w-3.5" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: '#787774', marginBottom: 8 }}>
+                          <Mail style={{ height: 14, width: 14 }} />
                           <span>{contact.email}</span>
                         </div>
                       )}
 
                       {contact.notes && (
-                        <div className="mt-3 rounded-md bg-muted/50 p-3">
-                          <p className="text-xs font-medium text-muted-foreground mb-1">Notes</p>
-                          <p className="text-sm whitespace-pre-wrap">{contact.notes}</p>
+                        <div style={{ marginTop: 12, borderRadius: 8, background: '#F7F6F3', padding: 12 }}>
+                          <p style={{ fontSize: 12, fontWeight: 500, color: '#787774', marginBottom: 4, margin: '0 0 4px' }}>Notes</p>
+                          <p style={{ fontSize: 14, whiteSpace: 'pre-wrap', color: '#37352F', margin: 0 }}>{contact.notes}</p>
                         </div>
                       )}
 
                       {contact.last_contacted_at && (
-                        <p className="text-xs text-muted-foreground mt-3">
+                        <p style={{ fontSize: 12, color: '#787774', marginTop: 12 }}>
                           Last contacted{' '}
                           {new Date(contact.last_contacted_at).toLocaleDateString('en-US', {
                             month: 'short',
@@ -393,31 +499,52 @@ export function ContactsPage({ contacts: initialContacts, userId }: ContactsPage
                         </p>
                       )}
 
-                      <div className="flex items-center gap-2 mt-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5"
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16 }}>
+                        <button
                           onClick={() => openEditDialog(contact)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '5px 10px',
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: '#37352F',
+                            background: '#FFFFFF',
+                            border: '1px solid #E3E2DE',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                          }}
                         >
-                          <Pencil className="h-3.5 w-3.5" />
+                          <Pencil style={{ height: 14, width: 14 }} />
                           Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5 text-destructive hover:bg-destructive hover:text-white"
+                        </button>
+                        <button
                           onClick={() => handleDelete(contact.id)}
                           disabled={deleting === contact.id}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '5px 10px',
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: '#EB5757',
+                            background: '#FFFFFF',
+                            border: '1px solid #E3E2DE',
+                            borderRadius: 6,
+                            cursor: deleting === contact.id ? 'not-allowed' : 'pointer',
+                            opacity: deleting === contact.id ? 0.5 : 1,
+                          }}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 style={{ height: 14, width: 14 }} />
                           {deleting === contact.id ? 'Deleting...' : 'Delete'}
-                        </Button>
+                        </button>
                       </div>
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>
@@ -425,68 +552,82 @@ export function ContactsPage({ contacts: initialContacts, userId }: ContactsPage
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent style={{ maxHeight: '90vh', overflow: 'auto', borderRadius: 8, border: '1px solid #E3E2DE', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', background: '#FFFFFF' }}>
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle style={{ fontSize: 18, fontWeight: 600, color: '#37352F' }}>
               {editingContact ? 'Edit Contact' : 'Add Contact'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription style={{ fontSize: 14, color: '#787774' }}>
               {editingContact
                 ? 'Update this contact\'s information.'
                 : 'Add someone new to your phone book.'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Name */}
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Name <span className="text-destructive">*</span>
+              <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>
+                Name <span style={{ color: '#EB5757' }}>*</span>
               </label>
-              <Input
+              <input
                 placeholder="e.g. Dr. Smith, City Hall"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                style={inputStyle}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
               />
             </div>
 
             {/* Phone + Email */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 1fr' }}>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Phone</label>
-                <Input
+                <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Phone</label>
+                <input
                   placeholder="(555) 123-4567"
                   value={form.phone_number}
                   onChange={(e) => setForm((f) => ({ ...f, phone_number: e.target.value }))}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Email</label>
-                <Input
+                <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Email</label>
+                <input
                   placeholder="name@example.com"
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
               </div>
             </div>
 
             {/* Company + Category */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 1fr' }}>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Company</label>
-                <Input
+                <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Company</label>
+                <input
                   placeholder="Organization or business"
                   value={form.company}
                   onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Category</label>
+                <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Category</label>
                 <select
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as Category }))}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  style={selectStyle}
+                  onFocus={handleFocus as any}
+                  onBlur={handleBlur as any}
                 >
                   <option value="personal">Personal</option>
                   <option value="business">Business</option>
@@ -499,48 +640,78 @@ export function ContactsPage({ contacts: initialContacts, userId }: ContactsPage
 
             {/* Notes */}
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Notes</label>
-              <Textarea
+              <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Notes</label>
+              <textarea
                 placeholder="Any details worth remembering..."
                 value={form.notes}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 rows={3}
+                style={textareaStyle}
+                onFocus={handleFocus as any}
+                onBlur={handleBlur as any}
               />
             </div>
 
             {/* Favorite Toggle */}
-            <div className="flex items-center gap-3">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <button
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, is_favorite: !f.is_favorite }))}
-                className="flex items-center gap-2 text-sm"
+                style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
               >
                 <Star
-                  className={cn(
-                    'h-5 w-5 transition-all duration-200',
-                    form.is_favorite
-                      ? 'fill-amber-400 text-amber-400'
-                      : 'text-muted-foreground'
-                  )}
+                  style={{
+                    height: 20,
+                    width: 20,
+                    color: form.is_favorite ? '#CB912F' : '#787774',
+                    fill: form.is_favorite ? '#CB912F' : 'none',
+                    transition: 'all 200ms ease',
+                  }}
                 />
-                <span className={form.is_favorite ? 'text-foreground' : 'text-muted-foreground'}>
+                <span style={{ color: form.is_favorite ? '#37352F' : '#787774' }}>
                   {form.is_favorite ? 'Favorited' : 'Mark as favorite'}
                 </span>
               </button>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+            <button
+              onClick={() => setDialogOpen(false)}
+              style={{
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#37352F',
+                background: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
               Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#FFFFFF',
+                background: '#2383E2',
+                border: 'none',
+                borderRadius: 8,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
               {saving
                 ? 'Saving...'
                 : editingContact
                   ? 'Save Changes'
                   : 'Add Contact'}
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

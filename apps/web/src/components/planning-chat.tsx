@@ -2,17 +2,6 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Send,
   Phone,
@@ -31,6 +20,21 @@ import {
 import type { ChatMessage, CallPlan, PlannedCall } from '@/types';
 
 // ---------------------------------------------------------------------------
+// Notion color palette
+// ---------------------------------------------------------------------------
+
+const COLORS = {
+  text: '#37352F',
+  secondary: '#787774',
+  border: '#E3E2DE',
+  warmBg: '#F7F6F3',
+  accent: '#2383E2',
+  white: '#FFFFFF',
+  red: '#EB5757',
+  green: '#4DAB9A',
+} as const;
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -44,9 +48,22 @@ function formatAssistantText(text: string): React.ReactNode[] {
   function flushList() {
     if (listBuffer.length === 0) return;
     elements.push(
-      <ul key={key++} className="my-1.5 ml-4 list-disc space-y-0.5">
+      <ul
+        key={key++}
+        style={{
+          margin: '6px 0',
+          marginLeft: 16,
+          listStyleType: 'disc',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
         {listBuffer.map((item, i) => (
-          <li key={i} className="text-sm leading-relaxed">
+          <li
+            key={i}
+            style={{ fontSize: 14, lineHeight: 1.625, color: COLORS.text }}
+          >
             {inlineFormat(item)}
           </li>
         ))}
@@ -68,16 +85,28 @@ function formatAssistantText(text: string): React.ReactNode[] {
     flushList();
 
     if (trimmed === '') {
-      elements.push(<div key={key++} className="h-2" />);
+      elements.push(<div key={key++} style={{ height: 8 }} />);
     } else if (trimmed.startsWith('###')) {
       elements.push(
-        <p key={key++} className="text-sm font-semibold mt-2 mb-0.5">
+        <p
+          key={key++}
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            marginTop: 8,
+            marginBottom: 2,
+            color: COLORS.text,
+          }}
+        >
           {inlineFormat(trimmed.replace(/^#{1,3}\s*/, ''))}
         </p>,
       );
     } else {
       elements.push(
-        <p key={key++} className="text-sm leading-relaxed">
+        <p
+          key={key++}
+          style={{ fontSize: 14, lineHeight: 1.625, color: COLORS.text }}
+        >
           {inlineFormat(trimmed)}
         </p>,
       );
@@ -102,13 +131,13 @@ function inlineFormat(text: string): React.ReactNode[] {
     }
     if (match[2]) {
       parts.push(
-        <strong key={k++} className="font-semibold">
+        <strong key={k++} style={{ fontWeight: 600 }}>
           {match[2]}
         </strong>,
       );
     } else if (match[3]) {
       parts.push(
-        <em key={k++} className="italic">
+        <em key={k++} style={{ fontStyle: 'italic' }}>
           {match[3]}
         </em>,
       );
@@ -132,25 +161,25 @@ function parseDurationMinutes(dur?: string): number {
 
 const PRIORITY_CONFIG = {
   high: {
-    dot: 'bg-red-500',
+    dotColor: COLORS.red,
     label: 'High',
-    ring: 'ring-red-500/20',
-    bg: 'bg-red-50 dark:bg-red-950/30',
-    text: 'text-red-700 dark:text-red-400',
+    ringColor: 'rgba(235, 87, 87, 0.15)',
+    bgColor: 'rgba(235, 87, 87, 0.06)',
+    textColor: '#C4554D',
   },
   medium: {
-    dot: 'bg-amber-500',
+    dotColor: '#CB912F',
     label: 'Medium',
-    ring: 'ring-amber-500/20',
-    bg: 'bg-amber-50 dark:bg-amber-950/30',
-    text: 'text-amber-700 dark:text-amber-400',
+    ringColor: 'rgba(203, 145, 47, 0.15)',
+    bgColor: 'rgba(203, 145, 47, 0.06)',
+    textColor: '#CB912F',
   },
   low: {
-    dot: 'bg-emerald-500',
+    dotColor: COLORS.green,
     label: 'Low',
-    ring: 'ring-emerald-500/20',
-    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
-    text: 'text-emerald-700 dark:text-emerald-400',
+    ringColor: 'rgba(77, 171, 154, 0.15)',
+    bgColor: 'rgba(77, 171, 154, 0.06)',
+    textColor: '#448361',
   },
 } as const;
 
@@ -161,24 +190,61 @@ const PRIORITY_CONFIG = {
 /** Animated typing dots */
 function TypingIndicator() {
   return (
-    <div className="flex justify-start">
-      <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
-        <div className="flex items-center gap-1.5">
-          <div className="flex gap-1">
+    <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+      <div
+        style={{
+          backgroundColor: COLORS.warmBg,
+          borderRadius: '16px 16px 16px 6px',
+          padding: '12px 16px',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
             <span
-              className="inline-block h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce"
-              style={{ animationDelay: '0ms', animationDuration: '1.2s' }}
+              className="notion-bounce"
+              style={{
+                display: 'inline-block',
+                height: 8,
+                width: 8,
+                borderRadius: '50%',
+                backgroundColor: COLORS.secondary,
+                animationDelay: '0ms',
+                animationDuration: '1.2s',
+              }}
             />
             <span
-              className="inline-block h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce"
-              style={{ animationDelay: '150ms', animationDuration: '1.2s' }}
+              className="notion-bounce"
+              style={{
+                display: 'inline-block',
+                height: 8,
+                width: 8,
+                borderRadius: '50%',
+                backgroundColor: COLORS.secondary,
+                animationDelay: '150ms',
+                animationDuration: '1.2s',
+              }}
             />
             <span
-              className="inline-block h-2 w-2 rounded-full bg-muted-foreground/40 animate-bounce"
-              style={{ animationDelay: '300ms', animationDuration: '1.2s' }}
+              className="notion-bounce"
+              style={{
+                display: 'inline-block',
+                height: 8,
+                width: 8,
+                borderRadius: '50%',
+                backgroundColor: COLORS.secondary,
+                animationDelay: '300ms',
+                animationDuration: '1.2s',
+              }}
             />
           </div>
-          <span className="text-xs text-muted-foreground ml-1.5">
+          <span
+            style={{
+              fontSize: 12,
+              color: COLORS.secondary,
+              marginLeft: 6,
+            }}
+          >
             Thinking...
           </span>
         </div>
@@ -199,6 +265,7 @@ function CallCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const priority = call.priority ?? 'medium';
   const config = PRIORITY_CONFIG[priority];
   const isLookup = !call.phone_number || call.phone_number === 'LOOKUP_NEEDED';
@@ -212,94 +279,214 @@ function CallCard({
 
   return (
     <div
-      className={
-        'group relative rounded-xl border bg-card shadow-sm transition-all duration-200 ' +
-        'hover:shadow-md hover:border-border/80'
-      }
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        position: 'relative',
+        borderRadius: 8,
+        border: `1px solid ${COLORS.border}`,
+        backgroundColor: COLORS.white,
+        boxShadow: hovered
+          ? '0 1px 2px rgba(0,0,0,0.06)'
+          : 'none',
+        transition: 'all 200ms',
+      }}
     >
       {/* Remove button */}
       <button
         type="button"
         onClick={() => onRemove(index)}
-        className={
-          'absolute -right-2 -top-2 z-10 flex h-6 w-6 items-center justify-center ' +
-          'rounded-full border bg-background text-muted-foreground shadow-sm ' +
-          'opacity-0 transition-opacity duration-150 group-hover:opacity-100 ' +
-          'hover:bg-destructive hover:text-white hover:border-destructive'
-        }
+        style={{
+          position: 'absolute',
+          right: -8,
+          top: -8,
+          zIndex: 10,
+          display: 'flex',
+          height: 24,
+          width: 24,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '50%',
+          border: `1px solid ${COLORS.border}`,
+          backgroundColor: COLORS.white,
+          color: COLORS.secondary,
+          cursor: 'pointer',
+          opacity: hovered ? 1 : 0,
+          transition: 'opacity 150ms',
+          padding: 0,
+        }}
         aria-label={`Remove call to ${call.business_name}`}
       >
-        <X className="h-3 w-3" />
+        <X style={{ height: 12, width: 12 }} />
       </button>
 
-      <div className="p-4">
+      <div style={{ padding: 16 }}>
         {/* Top row: priority dot, name, badges */}
-        <div className="flex items-start gap-3">
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
           {/* Priority indicator */}
           <div
-            className={
-              'mt-1 flex h-3 w-3 shrink-0 items-center justify-center rounded-full ring-4 ' +
-              config.dot +
-              ' ' +
-              config.ring
-            }
+            style={{
+              marginTop: 4,
+              flexShrink: 0,
+              height: 12,
+              width: 12,
+              borderRadius: '50%',
+              backgroundColor: config.dotColor,
+              boxShadow: `0 0 0 4px ${config.ringColor}`,
+            }}
           />
 
-          <div className="flex-1 min-w-0">
+          <div style={{ flex: 1, minWidth: 0 }}>
             {/* Name row */}
-            <div className="flex items-center justify-between gap-2">
-              <h4 className="font-medium text-sm truncate">
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 8,
+              }}
+            >
+              <h4
+                style={{
+                  fontWeight: 500,
+                  fontSize: 14,
+                  color: COLORS.text,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  margin: 0,
+                }}
+              >
                 {call.business_name}
               </h4>
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  flexShrink: 0,
+                }}
+              >
                 {call.expected_duration && (
-                  <Badge variant="secondary" className="text-xs gap-1 font-normal">
-                    <Clock className="h-3 w-3" />
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 12,
+                      color: COLORS.secondary,
+                      backgroundColor: COLORS.warmBg,
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontWeight: 400,
+                    }}
+                  >
+                    <Clock style={{ height: 12, width: 12 }} />
                     {call.expected_duration}
-                  </Badge>
+                  </span>
                 )}
-                <Badge
-                  variant="outline"
-                  className={'text-xs font-normal ' + config.text}
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    fontSize: 12,
+                    color: config.textColor,
+                    border: `1px solid ${COLORS.border}`,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    fontWeight: 400,
+                  }}
                 >
                   {config.label}
-                </Badge>
+                </span>
               </div>
             </div>
 
             {/* Purpose */}
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            <p
+              style={{
+                fontSize: 12,
+                color: COLORS.secondary,
+                marginTop: 4,
+                lineHeight: 1.625,
+                margin: '4px 0 0 0',
+              }}
+            >
               {call.purpose}
             </p>
 
             {/* Phone number row */}
-            <div className="mt-2.5 flex items-center gap-2">
+            <div
+              style={{
+                marginTop: 10,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}
+            >
               {isLookup ? (
-                <Badge
-                  variant="secondary"
-                  className="text-xs gap-1 font-normal text-muted-foreground"
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: 12,
+                    color: COLORS.secondary,
+                    backgroundColor: COLORS.warmBg,
+                    padding: '2px 8px',
+                    borderRadius: 4,
+                    fontWeight: 400,
+                  }}
                 >
-                  <Search className="h-3 w-3" />
+                  <Search style={{ height: 12, width: 12 }} />
                   Will look up number
-                </Badge>
+                </span>
               ) : (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-mono text-muted-foreground">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                      color: COLORS.secondary,
+                    }}
+                  >
                     {call.phone_number}
                   </span>
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className={
-                      'inline-flex h-6 w-6 items-center justify-center rounded-md ' +
-                      'text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
-                    }
+                    style={{
+                      display: 'inline-flex',
+                      height: 24,
+                      width: 24,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: 4,
+                      color: COLORS.secondary,
+                      border: 'none',
+                      backgroundColor: 'transparent',
+                      cursor: 'pointer',
+                      padding: 0,
+                      transition: 'background-color 150ms',
+                    }}
                     aria-label="Copy phone number"
                   >
                     {copied ? (
-                      <Check className="h-3 w-3 text-emerald-500" />
+                      <Check
+                        style={{
+                          height: 12,
+                          width: 12,
+                          color: COLORS.green,
+                        }}
+                      />
                     ) : (
-                      <Copy className="h-3 w-3" />
+                      <Copy style={{ height: 12, width: 12 }} />
                     )}
                   </button>
                 </div>
@@ -308,41 +495,90 @@ function CallCard({
 
             {/* Expandable questions */}
             {call.questions.length > 0 && (
-              <div className="mt-3">
+              <div style={{ marginTop: 12 }}>
                 <button
                   type="button"
                   onClick={() => setExpanded(!expanded)}
-                  className={
-                    'flex w-full items-center gap-1.5 text-xs font-medium ' +
-                    'text-muted-foreground transition-colors hover:text-foreground'
-                  }
+                  style={{
+                    display: 'flex',
+                    width: '100%',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: COLORS.secondary,
+                    border: 'none',
+                    backgroundColor: 'transparent',
+                    cursor: 'pointer',
+                    padding: 0,
+                    transition: 'color 150ms',
+                  }}
                 >
-                  <MessageSquare className="h-3 w-3" />
+                  <MessageSquare style={{ height: 12, width: 12 }} />
                   {call.questions.length} question
                   {call.questions.length !== 1 ? 's' : ''} to ask
                   {expanded ? (
-                    <ChevronUp className="h-3 w-3 ml-auto" />
+                    <ChevronUp
+                      style={{ height: 12, width: 12, marginLeft: 'auto' }}
+                    />
                   ) : (
-                    <ChevronDown className="h-3 w-3 ml-auto" />
+                    <ChevronDown
+                      style={{ height: 12, width: 12, marginLeft: 'auto' }}
+                    />
                   )}
                 </button>
 
                 <div
-                  className={
-                    'overflow-hidden transition-all duration-200 ease-in-out ' +
-                    (expanded ? 'max-h-96 opacity-100 mt-2' : 'max-h-0 opacity-0')
-                  }
+                  style={{
+                    overflow: 'hidden',
+                    transition: 'all 200ms ease-in-out',
+                    maxHeight: expanded ? 384 : 0,
+                    opacity: expanded ? 1 : 0,
+                    marginTop: expanded ? 8 : 0,
+                  }}
                 >
-                  <ul className="space-y-1.5 rounded-lg bg-muted/50 p-3">
+                  <ul
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 6,
+                      borderRadius: 8,
+                      backgroundColor: COLORS.warmBg,
+                      padding: 12,
+                      margin: 0,
+                      listStyle: 'none',
+                    }}
+                  >
                     {call.questions.map((q, qi) => (
                       <li
                         key={qi}
-                        className="flex items-start gap-2 text-xs text-muted-foreground"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 8,
+                          fontSize: 12,
+                          color: COLORS.secondary,
+                        }}
                       >
-                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-medium text-primary">
+                        <span
+                          style={{
+                            marginTop: 2,
+                            flexShrink: 0,
+                            display: 'flex',
+                            height: 16,
+                            width: 16,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(35, 131, 226, 0.1)',
+                            fontSize: 10,
+                            fontWeight: 500,
+                            color: COLORS.accent,
+                          }}
+                        >
                           {qi + 1}
                         </span>
-                        <span className="leading-relaxed">{q}</span>
+                        <span style={{ lineHeight: 1.625 }}>{q}</span>
                       </li>
                     ))}
                   </ul>
@@ -359,14 +595,51 @@ function CallCard({
 /** Empty state when there are no messages yet */
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center h-full py-12 px-4 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 mb-4">
-        <Sparkles className="h-7 w-7 text-primary" />
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        padding: '48px 16px',
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          height: 56,
+          width: 56,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 16,
+          backgroundColor: 'rgba(35, 131, 226, 0.1)',
+          marginBottom: 16,
+        }}
+      >
+        <Sparkles style={{ height: 28, width: 28, color: COLORS.accent }} />
       </div>
-      <h3 className="text-base font-semibold mb-1.5">
+      <h3
+        style={{
+          fontSize: 16,
+          fontWeight: 600,
+          marginBottom: 6,
+          color: COLORS.text,
+          margin: '0 0 6px 0',
+        }}
+      >
         Tell me what calls you need made
       </h3>
-      <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
+      <p
+        style={{
+          fontSize: 14,
+          color: COLORS.secondary,
+          maxWidth: 384,
+          lineHeight: 1.625,
+          margin: 0,
+        }}
+      >
         Describe what you need and I will put together a plan, figure out who to
         call, and handle everything for you.
       </p>
@@ -400,6 +673,7 @@ export function PlanningChat({
   const [removedIndices, setRemovedIndices] = useState<Set<number>>(
     new Set(),
   );
+  const [inputFocused, setInputFocused] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -504,24 +778,53 @@ export function PlanningChat({
   const showPlan = currentPlan && currentStatus === 'ready';
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-5 p-4">
+    <div
+      style={{
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        width: '100%',
+        maxWidth: 672,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 20,
+        padding: 16,
+      }}
+    >
       {/* ---- Chat messages ---- */}
-      <Card className="overflow-hidden border shadow-sm">
-        <ScrollArea className="h-[420px]">
-          <div className="p-5">
+      <div
+        style={{
+          overflow: 'hidden',
+          border: `1px solid ${COLORS.border}`,
+          borderRadius: 8,
+          backgroundColor: COLORS.white,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+        }}
+      >
+        <div
+          style={{
+            height: 420,
+            overflowY: 'auto',
+          }}
+        >
+          <div style={{ padding: 20 }}>
             {messages.length === 0 && !sending ? (
               <EmptyState />
             ) : (
-              <div className="space-y-4">
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                }}
+              >
                 {messages.map((msg, i) => {
                   const isUser = msg.role === 'user';
                   return (
                     <div
                       key={i}
-                      className={
-                        'flex ' + (isUser ? 'justify-end' : 'justify-start')
-                      }
                       style={{
+                        display: 'flex',
+                        justifyContent: isUser ? 'flex-end' : 'flex-start',
                         animationName: 'fadeInUp',
                         animationDuration: '0.25s',
                         animationFillMode: 'both',
@@ -529,24 +832,68 @@ export function PlanningChat({
                       }}
                     >
                       {!isUser && (
-                        <div className="mr-2.5 mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                          <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        <div
+                          style={{
+                            marginRight: 10,
+                            marginTop: 4,
+                            flexShrink: 0,
+                            display: 'flex',
+                            height: 28,
+                            width: 28,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(35, 131, 226, 0.1)',
+                          }}
+                        >
+                          <Sparkles
+                            style={{
+                              height: 14,
+                              width: 14,
+                              color: COLORS.accent,
+                            }}
+                          />
                         </div>
                       )}
                       <div
-                        className={
-                          'max-w-[80%] ' +
-                          (isUser
-                            ? 'rounded-2xl rounded-br-md bg-primary text-primary-foreground px-4 py-2.5 shadow-sm'
-                            : 'rounded-2xl rounded-bl-md bg-muted px-4 py-3 shadow-sm')
-                        }
+                        style={{
+                          maxWidth: '80%',
+                          ...(isUser
+                            ? {
+                                borderRadius: '16px 16px 6px 16px',
+                                backgroundColor: COLORS.accent,
+                                color: COLORS.white,
+                                padding: '10px 16px',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                              }
+                            : {
+                                borderRadius: '16px 16px 16px 6px',
+                                backgroundColor: COLORS.warmBg,
+                                color: COLORS.text,
+                                padding: '12px 16px',
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                              }),
+                        }}
                       >
                         {isUser ? (
-                          <p className="text-sm leading-relaxed">
+                          <p
+                            style={{
+                              fontSize: 14,
+                              lineHeight: 1.625,
+                              margin: 0,
+                              color: COLORS.white,
+                            }}
+                          >
                             {msg.content}
                           </p>
                         ) : (
-                          <div className="space-y-0.5">
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 2,
+                            }}
+                          >
                             {formatAssistantText(msg.content)}
                           </div>
                         )}
@@ -562,42 +909,81 @@ export function PlanningChat({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* ---- Input bar ---- */}
         {showInput && (
-          <div className="border-t bg-card px-4 py-3">
-            <form onSubmit={handleSend} className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Input
+          <div
+            style={{
+              borderTop: `1px solid ${COLORS.border}`,
+              backgroundColor: COLORS.white,
+              padding: '12px 16px',
+            }}
+          >
+            <form
+              onSubmit={handleSend}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <div style={{ position: 'relative', flex: 1 }}>
+                <input
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
                   placeholder={
                     messages.length === 0
                       ? 'e.g. "Schedule a dentist appointment for next week"'
                       : 'Type your response...'
                   }
                   disabled={sending}
-                  className={
-                    'pr-4 transition-shadow duration-200 ' +
-                    'focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 ' +
-                    'placeholder:text-muted-foreground/60'
-                  }
+                  style={{
+                    width: '100%',
+                    height: 40,
+                    padding: '0 16px',
+                    fontSize: 14,
+                    color: COLORS.text,
+                    backgroundColor: COLORS.white,
+                    border: `1px solid ${inputFocused ? COLORS.accent : COLORS.border}`,
+                    borderRadius: 8,
+                    outline: 'none',
+                    boxShadow: inputFocused
+                      ? `0 0 0 3px rgba(35, 131, 226, 0.15)`
+                      : 'none',
+                    transition: 'border-color 200ms, box-shadow 200ms',
+                    opacity: sending ? 0.6 : 1,
+                  }}
                 />
               </div>
-              <Button
+              <button
                 type="submit"
-                size="icon"
                 disabled={!input.trim() || sending}
-                className="shrink-0 transition-transform duration-150 active:scale-95"
+                style={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  height: 40,
+                  width: 40,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 8,
+                  border: 'none',
+                  backgroundColor:
+                    !input.trim() || sending
+                      ? COLORS.border
+                      : COLORS.accent,
+                  color: COLORS.white,
+                  cursor:
+                    !input.trim() || sending ? 'not-allowed' : 'pointer',
+                  transition: 'transform 150ms, background-color 150ms',
+                  padding: 0,
+                }}
               >
-                <Send className="h-4 w-4" />
-              </Button>
+                <Send style={{ height: 16, width: 16 }} />
+              </button>
             </form>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* ---- Call Plan ---- */}
       {showPlan && (
@@ -609,40 +995,127 @@ export function PlanningChat({
             animationTimingFunction: 'ease-out',
           }}
         >
-          <Card className="border shadow-sm">
-            <CardHeader>
-              <div className="flex items-center justify-between">
+          <div
+            style={{
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 8,
+              backgroundColor: COLORS.white,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+            }}
+          >
+            {/* Card Header */}
+            <div
+              style={{
+                padding: '20px 24px 0 24px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <div>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-primary" />
+                  <h3
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 600,
+                      color: COLORS.text,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      margin: 0,
+                    }}
+                  >
+                    <Phone
+                      style={{
+                        height: 16,
+                        width: 16,
+                        color: COLORS.accent,
+                      }}
+                    />
                     Call Plan
-                  </CardTitle>
-                  <CardDescription className="mt-1">
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: COLORS.secondary,
+                      marginTop: 4,
+                      margin: '4px 0 0 0',
+                    }}
+                  >
                     {currentPlan!.summary}
-                  </CardDescription>
+                  </p>
                 </div>
 
                 {/* Duration pill */}
                 {activeCalls.length > 0 && (
-                  <Badge
-                    variant="secondary"
-                    className="text-xs gap-1.5 font-normal shrink-0"
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 12,
+                      color: COLORS.secondary,
+                      backgroundColor: COLORS.warmBg,
+                      padding: '4px 10px',
+                      borderRadius: 4,
+                      fontWeight: 400,
+                      flexShrink: 0,
+                    }}
                   >
-                    <Clock className="h-3 w-3" />
+                    <Clock style={{ height: 12, width: 12 }} />
                     ~{totalDuration} min total
-                  </Badge>
+                  </span>
                 )}
               </div>
-            </CardHeader>
+            </div>
 
-            <CardContent className="space-y-3">
+            {/* Card Content */}
+            <div
+              style={{
+                padding: '16px 24px 24px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
               {activeCalls.length === 0 ? (
-                <div className="flex flex-col items-center py-8 text-center">
-                  <AlertCircle className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                  <p className="text-sm text-muted-foreground">
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    padding: '32px 0',
+                    textAlign: 'center',
+                  }}
+                >
+                  <AlertCircle
+                    style={{
+                      height: 32,
+                      width: 32,
+                      color: 'rgba(120, 119, 116, 0.4)',
+                      marginBottom: 8,
+                    }}
+                  />
+                  <p
+                    style={{
+                      fontSize: 14,
+                      color: COLORS.secondary,
+                      margin: 0,
+                    }}
+                  >
                     All calls have been removed.
                   </p>
-                  <p className="text-xs text-muted-foreground/70 mt-0.5">
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: 'rgba(120, 119, 116, 0.7)',
+                      marginTop: 2,
+                      margin: '2px 0 0 0',
+                    }}
+                  >
                     Continue the conversation to build a new plan.
                   </p>
                 </div>
@@ -664,34 +1137,69 @@ export function PlanningChat({
 
               {/* Start Calls button */}
               {activeCalls.length > 0 && (
-                <Button
+                <button
                   onClick={handleStartCalls}
-                  className={
-                    'w-full mt-4 h-11 text-sm font-medium transition-all duration-200 ' +
-                    'shadow-sm hover:shadow-md active:scale-[0.98]'
-                  }
                   disabled={initiating}
+                  style={{
+                    width: '100%',
+                    marginTop: 16,
+                    height: 44,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 8,
+                    border: 'none',
+                    backgroundColor: initiating
+                      ? COLORS.border
+                      : COLORS.accent,
+                    color: COLORS.white,
+                    cursor: initiating ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                    transition: 'all 200ms',
+                    padding: 0,
+                  }}
                 >
                   {initiating ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2
+                        className="notion-spin"
+                        style={{ marginRight: 8, height: 16, width: 16 }}
+                      />
                       Starting calls...
                     </>
                   ) : (
                     <>
-                      <Phone className="mr-2 h-4 w-4" />
+                      <Phone
+                        style={{ marginRight: 8, height: 16, width: 16 }}
+                      />
                       Start {activeCalls.length} Call
                       {activeCalls.length !== 1 ? 's' : ''}
                     </>
                   )}
-                </Button>
+                </button>
               )}
 
               {/* Back-to-chat when all removed */}
               {activeCalls.length === 0 && (
-                <Button
-                  variant="outline"
-                  className="w-full"
+                <button
+                  style={{
+                    width: '100%',
+                    height: 40,
+                    fontSize: 14,
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 8,
+                    border: `1px solid ${COLORS.border}`,
+                    backgroundColor: COLORS.white,
+                    color: COLORS.text,
+                    cursor: 'pointer',
+                    transition: 'background-color 150ms',
+                    padding: 0,
+                  }}
                   onClick={() => {
                     setCurrentStatus('planning');
                     setRemovedIndices(new Set());
@@ -699,10 +1207,10 @@ export function PlanningChat({
                   }}
                 >
                   Back to conversation
-                </Button>
+                </button>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 
@@ -717,6 +1225,29 @@ export function PlanningChat({
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        @keyframes notionBounce {
+          0%, 60%, 100% {
+            transform: translateY(0);
+          }
+          30% {
+            transform: translateY(-4px);
+          }
+        }
+        .notion-bounce {
+          animation-name: notionBounce;
+          animation-iteration-count: infinite;
+        }
+        @keyframes notionSpin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .notion-spin {
+          animation: notionSpin 1s linear infinite;
         }
       `}</style>
     </div>

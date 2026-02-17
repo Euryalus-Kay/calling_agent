@@ -4,12 +4,6 @@ import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -31,7 +25,6 @@ import {
   ArrowRight,
   TrendingUp,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { TaskTemplate } from '@/types';
 
 /* ------------------------------------------------------------------ */
@@ -48,15 +41,11 @@ const CATEGORIES: { value: TemplateCategory | 'all'; label: string }[] = [
   { value: 'general', label: 'General' },
 ];
 
-const categoryColors: Record<TemplateCategory, string> = {
-  appointment:
-    'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  inquiry:
-    'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  reservation:
-    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  general:
-    'bg-gray-100 text-gray-700 dark:bg-gray-900/40 dark:text-gray-300',
+const categoryColors: Record<TemplateCategory, { bg: string; text: string }> = {
+  appointment: { bg: 'rgba(35,131,226,0.06)', text: '#2383E2' },
+  inquiry: { bg: 'rgba(203,145,47,0.06)', text: '#CB912F' },
+  reservation: { bg: 'rgba(77,171,154,0.06)', text: '#4DAB9A' },
+  general: { bg: 'rgba(120,119,116,0.06)', text: '#787774' },
 };
 
 const categoryIcons: Record<TemplateCategory, React.ElementType> = {
@@ -80,6 +69,43 @@ const emptyForm = {
   description: '',
   category: 'general' as TemplateCategory,
 };
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: 36,
+  padding: '0 12px',
+  fontSize: 14,
+  color: '#37352F',
+  background: '#FFFFFF',
+  border: '1px solid #E3E2DE',
+  borderRadius: 8,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const textareaStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  fontSize: 14,
+  color: '#37352F',
+  background: '#FFFFFF',
+  border: '1px solid #E3E2DE',
+  borderRadius: 8,
+  outline: 'none',
+  resize: 'vertical',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+};
+
+function handleFocus(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = '#2383E2';
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(35,131,226,0.15)';
+}
+
+function handleBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = '#E3E2DE';
+  e.currentTarget.style.boxShadow = 'none';
+}
 
 export function TemplatesPage({ templates: initialTemplates, userId }: TemplatesPageProps) {
   const supabase = createSupabaseBrowserClient();
@@ -205,154 +231,238 @@ export function TemplatesPage({ templates: initialTemplates, userId }: Templates
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-4 sm:p-6">
+    <div style={{ maxWidth: 896, margin: '0 auto', padding: '16px 24px' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Templates</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#37352F', letterSpacing: '-0.01em', margin: 0 }}>Templates</h1>
+          <p style={{ fontSize: 14, color: '#787774', marginTop: 4 }}>
             Save and reuse common calling tasks.
           </p>
         </div>
-        <Button onClick={openAddDialog} size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" />
+        <button
+          onClick={openAddDialog}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            fontSize: 14,
+            fontWeight: 500,
+            color: '#FFFFFF',
+            background: '#2383E2',
+            border: 'none',
+            borderRadius: 8,
+            cursor: 'pointer',
+          }}
+        >
+          <Plus style={{ height: 16, width: 16 }} />
           Add Template
-        </Button>
+        </button>
       </div>
 
       {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
+      <div style={{ position: 'relative', marginBottom: 16 }}>
+        <Search style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', height: 16, width: 16, color: '#787774' }} />
+        <input
           placeholder="Search templates..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
+          style={{ ...inputStyle, paddingLeft: 36, paddingRight: search ? 36 : 12 }}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
         />
         {search && (
           <button
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#787774', padding: 0 }}
           >
-            <X className="h-4 w-4" />
+            <X style={{ height: 16, width: 16 }} />
           </button>
         )}
       </div>
 
       {/* Category Tabs */}
-      <Tabs
-        value={activeCategory}
-        onValueChange={(v) => setActiveCategory(v as TemplateCategory | 'all')}
-        className="mb-6"
-      >
-        <TabsList className="flex-wrap">
-          {CATEGORIES.map((cat) => (
-            <TabsTrigger key={cat.value} value={cat.value}>
-              {cat.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 24 }}>
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.value}
+            onClick={() => setActiveCategory(cat.value)}
+            style={{
+              padding: '4px 12px',
+              fontSize: 13,
+              fontWeight: activeCategory === cat.value ? 600 : 400,
+              color: activeCategory === cat.value ? '#37352F' : '#787774',
+              background: activeCategory === cat.value ? '#EFEFEF' : 'transparent',
+              border: 'none',
+              borderRadius: 6,
+              cursor: 'pointer',
+              transition: 'background 120ms ease',
+            }}
+            onMouseEnter={(e) => { if (activeCategory !== cat.value) e.currentTarget.style.background = '#EFEFEF'; }}
+            onMouseLeave={(e) => { if (activeCategory !== cat.value) e.currentTarget.style.background = 'transparent'; }}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
 
       {/* Template Grid */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-            <ClipboardList className="h-8 w-8 text-muted-foreground" />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', textAlign: 'center' }}>
+          <div style={{ display: 'flex', height: 64, width: 64, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#F7F6F3', marginBottom: 16 }}>
+            <ClipboardList style={{ height: 32, width: 32, color: '#787774' }} />
           </div>
-          <h2 className="text-lg font-medium mb-1">
+          <h2 style={{ fontSize: 18, fontWeight: 500, marginBottom: 4, color: '#37352F' }}>
             {templates.length === 0
               ? 'No templates yet'
               : 'No templates match your search'}
           </h2>
-          <p className="text-sm text-muted-foreground max-w-sm">
+          <p style={{ fontSize: 14, color: '#787774', maxWidth: 360 }}>
             {templates.length === 0
               ? 'Create your first template to quickly reuse common calling tasks like booking appointments or checking store hours.'
               : 'Try adjusting your search or category filter to find what you are looking for.'}
           </p>
           {templates.length === 0 && (
-            <Button onClick={openAddDialog} variant="outline" className="mt-4 gap-1.5">
-              <Plus className="h-4 w-4" />
+            <button
+              onClick={openAddDialog}
+              style={{
+                marginTop: 16,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#37352F',
+                background: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
+              <Plus style={{ height: 16, width: 16 }} />
               Create your first template
-            </Button>
+            </button>
           )}
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))' }}>
           {filtered.map((template) => {
             const Icon = getIcon(template);
             const category = (template.category as TemplateCategory) || 'general';
+            const catColor = categoryColors[category];
 
             return (
-              <Card
+              <div
                 key={template.id}
-                className="transition-all duration-200 hover:shadow-md group"
+                style={{
+                  background: '#FFFFFF',
+                  border: '1px solid #E3E2DE',
+                  borderRadius: 8,
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                  padding: 16,
+                  transition: 'background 120ms ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#F7F6F3'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    {/* Icon */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <Icon className="h-5 w-5" />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  {/* Icon */}
+                  <div style={{
+                    display: 'flex',
+                    height: 40,
+                    width: 40,
+                    flexShrink: 0,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 8,
+                    background: 'rgba(35,131,226,0.08)',
+                    color: '#2383E2',
+                  }}>
+                    <Icon style={{ height: 20, width: 20 }} />
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 500, fontSize: 14, color: '#37352F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {template.title}
+                      </span>
+                      <span style={{
+                        fontSize: 10,
+                        fontWeight: 500,
+                        padding: '1px 6px',
+                        borderRadius: 4,
+                        flexShrink: 0,
+                        background: catColor.bg,
+                        color: catColor.text,
+                      }}>
+                        {category}
+                      </span>
                     </div>
 
-                    {/* Content */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm truncate">
-                          {template.title}
+                    <p style={{ fontSize: 12, color: '#787774', marginTop: 4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', margin: '4px 0 0' }}>
+                      {template.description}
+                    </p>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#787774' }}>
+                        <TrendingUp style={{ height: 12, width: 12 }} />
+                        <span>
+                          Used {template.use_count}{' '}
+                          {template.use_count === 1 ? 'time' : 'times'}
                         </span>
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            'text-[10px] px-1.5 py-0 border-0 shrink-0',
-                            categoryColors[category]
-                          )}
-                        >
-                          {category}
-                        </Badge>
                       </div>
 
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                        {template.description}
-                      </p>
-
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <TrendingUp className="h-3 w-3" />
-                          <span>
-                            Used {template.use_count}{' '}
-                            {template.use_count === 1 ? 'time' : 'times'}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          {template.user_id === userId && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(template.id);
-                              }}
-                            >
-                              Delete
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            className="h-7 gap-1 text-xs"
-                            onClick={() => handleUseTemplate(template)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {template.user_id === userId && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(template.id);
+                            }}
+                            style={{
+                              padding: '3px 8px',
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: '#787774',
+                              background: 'none',
+                              border: 'none',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              transition: 'color 120ms ease',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#EB5757'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#787774'; }}
                           >
-                            Use Template
-                            <ArrowRight className="h-3 w-3" />
-                          </Button>
-                        </div>
+                            Delete
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleUseTemplate(template)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            padding: '4px 10px',
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: '#FFFFFF',
+                            background: '#2383E2',
+                            border: 'none',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Use Template
+                          <ArrowRight style={{ height: 12, width: 12 }} />
+                        </button>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             );
           })}
         </div>
@@ -360,49 +470,57 @@ export function TemplatesPage({ templates: initialTemplates, userId }: Templates
 
       {/* Add Template Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent style={{ maxHeight: '90vh', overflow: 'auto', borderRadius: 8, border: '1px solid #E3E2DE', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', background: '#FFFFFF' }}>
           <DialogHeader>
-            <DialogTitle>Add Template</DialogTitle>
-            <DialogDescription>
+            <DialogTitle style={{ fontSize: 18, fontWeight: 600, color: '#37352F' }}>Add Template</DialogTitle>
+            <DialogDescription style={{ fontSize: 14, color: '#787774' }}>
               Create a reusable template for a common calling task.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Title */}
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Title <span className="text-destructive">*</span>
+              <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>
+                Title <span style={{ color: '#EB5757' }}>*</span>
               </label>
-              <Input
+              <input
                 placeholder="e.g. Book doctor appointment"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                style={inputStyle}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Description <span className="text-destructive">*</span>
+              <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>
+                Description <span style={{ color: '#EB5757' }}>*</span>
               </label>
-              <Textarea
+              <textarea
                 placeholder="Describe what this call should accomplish. This will be used as the task input when you use this template."
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={4}
+                style={textareaStyle}
+                onFocus={handleFocus as any}
+                onBlur={handleBlur as any}
               />
             </div>
 
             {/* Category */}
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Category</label>
+              <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Category</label>
               <select
                 value={form.category}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, category: e.target.value as TemplateCategory }))
                 }
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                style={{ ...inputStyle, appearance: 'auto' as const }}
+                onFocus={handleFocus as any}
+                onBlur={handleBlur as any}
               >
                 <option value="appointment">Appointment</option>
                 <option value="inquiry">Inquiry</option>
@@ -412,13 +530,39 @@ export function TemplatesPage({ templates: initialTemplates, userId }: Templates
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+            <button
+              onClick={() => setDialogOpen(false)}
+              style={{
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#37352F',
+                background: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
               Cancel
-            </Button>
-            <Button onClick={handleCreate} disabled={saving}>
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={saving}
+              style={{
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#FFFFFF',
+                background: '#2383E2',
+                border: 'none',
+                borderRadius: 8,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
               {saving ? 'Creating...' : 'Create Template'}
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

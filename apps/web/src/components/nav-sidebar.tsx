@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   Phone,
@@ -65,16 +64,22 @@ export function NavSidebar({ userName, unreadNotifications = 0 }: NavSidebarProp
         href={item.href}
         onClick={() => setMobileOpen(false)}
         className={cn(
-          'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-150',
+          'group flex items-center gap-2.5 rounded-[6px] px-2.5 py-[5px] text-[14px] leading-[1.4] transition-colors duration-100',
           active
-            ? 'bg-primary text-primary-foreground shadow-sm'
-            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            ? 'bg-[#EFEFEF] text-[#37352F] font-medium'
+            : 'text-[#787774] hover:bg-[#EFEFEF] hover:text-[#37352F]'
         )}
       >
-        <item.icon className={cn('h-4 w-4 shrink-0', active && 'drop-shadow-sm')} />
+        <item.icon
+          className="h-[18px] w-[18px] shrink-0"
+          strokeWidth={1.5}
+        />
         <span className="truncate">{item.label}</span>
         {item.href === '/notifications' && unreadNotifications > 0 && (
-          <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-medium text-white">
+          <span
+            className="ml-auto flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[11px] font-medium leading-none text-white"
+            style={{ backgroundColor: '#EB5757' }}
+          >
             {unreadNotifications > 9 ? '9+' : unreadNotifications}
           </span>
         )}
@@ -83,29 +88,40 @@ export function NavSidebar({ userName, unreadNotifications = 0 }: NavSidebarProp
   }
 
   const sidebarContent = (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col" style={{ backgroundColor: '#FFFFFF' }}>
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm">
-          <Phone className="h-4 w-4 text-primary-foreground" />
+      <div className="flex items-center gap-2.5 px-4 py-4">
+        <div
+          className="flex h-[26px] w-[26px] items-center justify-center rounded-[4px]"
+          style={{ backgroundColor: '#37352F' }}
+        >
+          <Phone className="h-[14px] w-[14px] text-white" strokeWidth={1.5} />
         </div>
-        <div>
-          <span className="text-lg font-bold tracking-tight">CallAgent</span>
-          <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Your AI phone assistant</p>
-        </div>
+        <span
+          className="text-[15px] font-semibold tracking-[-0.01em]"
+          style={{ color: '#37352F' }}
+        >
+          CallAgent
+        </span>
       </div>
 
       {/* Main navigation */}
-      <nav className="flex-1 space-y-1 px-3 pt-2">
-        <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+      <nav className="flex-1 space-y-[2px] px-2 pt-1">
+        <p
+          className="px-2.5 pb-[2px] pt-3 text-[11px] font-medium uppercase tracking-[0.06em]"
+          style={{ color: '#787774' }}
+        >
           Main
         </p>
         {mainNav.map((item) => (
           <NavItem key={item.href} item={item} />
         ))}
 
-        <div className="pt-4">
-          <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+        <div className="pt-5">
+          <p
+            className="px-2.5 pb-[2px] pt-1 text-[11px] font-medium uppercase tracking-[0.06em]"
+            style={{ color: '#787774' }}
+          >
             You
           </p>
           {secondaryNav.map((item) => (
@@ -115,23 +131,33 @@ export function NavSidebar({ userName, unreadNotifications = 0 }: NavSidebarProp
       </nav>
 
       {/* User section */}
-      <div className="border-t p-3">
-        <div className="flex items-center gap-3 rounded-lg px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-sm font-medium">
+      <div
+        className="mx-2 mb-2 mt-1 rounded-[6px] px-2.5 py-2"
+        style={{ borderTop: '1px solid #E3E2DE' }}
+      >
+        <div className="flex items-center gap-2.5 pt-2">
+          <div
+            className="flex h-[24px] w-[24px] items-center justify-center rounded-full text-[12px] font-medium"
+            style={{ backgroundColor: '#F7F6F3', color: '#37352F' }}
+          >
             {userName.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{userName}</p>
+            <p
+              className="text-[14px] font-medium truncate"
+              style={{ color: '#37352F' }}
+            >
+              {userName}
+            </p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
             onClick={handleSignOut}
             title="Sign out"
-            className="h-8 w-8 shrink-0"
+            className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[4px] transition-colors duration-100 hover:bg-[#EFEFEF]"
+            style={{ color: '#787774' }}
           >
-            <LogOut className="h-3.5 w-3.5" />
-          </Button>
+            <LogOut className="h-[15px] w-[15px]" strokeWidth={1.5} />
+          </button>
         </div>
       </div>
     </div>
@@ -140,19 +166,23 @@ export function NavSidebar({ userName, unreadNotifications = 0 }: NavSidebarProp
   return (
     <>
       {/* Mobile hamburger */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed left-4 top-4 z-50 md:hidden"
+      <button
+        className="fixed left-4 top-4 z-50 flex h-[32px] w-[32px] items-center justify-center rounded-[6px] transition-colors duration-100 hover:bg-[#EFEFEF] md:hidden"
+        style={{ color: '#37352F' }}
         onClick={() => setMobileOpen(!mobileOpen)}
       >
-        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
+        {mobileOpen ? (
+          <X className="h-5 w-5" strokeWidth={1.5} />
+        ) : (
+          <Menu className="h-5 w-5" strokeWidth={1.5} />
+        )}
+      </button>
 
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 md:hidden"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -160,9 +190,14 @@ export function NavSidebar({ userName, unreadNotifications = 0 }: NavSidebarProp
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-64 border-r bg-card transition-transform duration-200 md:static md:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 w-[240px] transition-transform duration-200 md:static md:translate-x-0',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
+        style={{
+          borderRight: '1px solid #E3E2DE',
+          backgroundColor: '#FFFFFF',
+          boxShadow: mobileOpen ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+        }}
       >
         {sidebarContent}
       </aside>

@@ -1,10 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { CallTranscript } from './call-transcript';
-import { cn } from '@/lib/utils';
 import {
   Phone,
   PhoneOff,
@@ -28,85 +25,85 @@ const statusConfig: Record<
 > = {
   queued: {
     label: 'In queue',
-    color: 'text-zinc-600 dark:text-zinc-400',
-    bgColor: 'bg-zinc-100 dark:bg-zinc-800',
+    color: '#787774',
+    bgColor: 'rgba(120,119,116,0.06)',
     icon: Clock,
   },
   initiating: {
     label: 'Dialing',
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50 dark:bg-amber-950',
+    color: '#CB912F',
+    bgColor: 'rgba(203,145,47,0.06)',
     icon: Loader2,
   },
   ringing: {
     label: 'Ringing',
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50 dark:bg-blue-950',
+    color: '#2383E2',
+    bgColor: 'rgba(35,131,226,0.06)',
     icon: Phone,
   },
   in_progress: {
     label: 'On call',
-    color: 'text-green-600',
-    bgColor: 'bg-green-50 dark:bg-green-950',
+    color: '#4DAB9A',
+    bgColor: 'rgba(77,171,154,0.06)',
     icon: Phone,
   },
   on_hold: {
     label: 'On hold',
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50 dark:bg-yellow-950',
+    color: '#CB912F',
+    bgColor: 'rgba(203,145,47,0.06)',
     icon: Pause,
     description: 'Waiting patiently on hold',
   },
   navigating_menu: {
     label: 'Phone menu',
-    color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50 dark:bg-indigo-950',
+    color: '#6940A5',
+    bgColor: 'rgba(105,64,165,0.06)',
     icon: Hash,
     description: 'Navigating automated menu',
   },
   transferred: {
     label: 'Transferred',
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50 dark:bg-purple-950',
+    color: '#6940A5',
+    bgColor: 'rgba(105,64,165,0.06)',
     icon: ArrowRightLeft,
     description: 'Being transferred to the right department',
   },
   voicemail: {
     label: 'Voicemail',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950',
+    color: '#D9730D',
+    bgColor: 'rgba(217,115,13,0.06)',
     icon: Voicemail,
     description: 'Leaving a voicemail message',
   },
   retrying: {
     label: 'Retrying',
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50 dark:bg-amber-950',
+    color: '#CB912F',
+    bgColor: 'rgba(203,145,47,0.06)',
     icon: RotateCw,
     description: 'Trying again in a moment',
   },
   completed: {
     label: 'Done',
-    color: 'text-green-700 dark:text-green-400',
-    bgColor: 'bg-green-50 dark:bg-green-950',
+    color: '#4DAB9A',
+    bgColor: 'rgba(77,171,154,0.06)',
     icon: CheckCircle,
   },
   failed: {
     label: 'Failed',
-    color: 'text-red-600',
-    bgColor: 'bg-red-50 dark:bg-red-950',
+    color: '#EB5757',
+    bgColor: 'rgba(235,87,87,0.06)',
     icon: XCircle,
   },
   no_answer: {
     label: 'No answer',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950',
+    color: '#D9730D',
+    bgColor: 'rgba(217,115,13,0.06)',
     icon: PhoneOff,
   },
   busy: {
     label: 'Busy',
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50 dark:bg-orange-950',
+    color: '#D9730D',
+    bgColor: 'rgba(217,115,13,0.06)',
     icon: PhoneOff,
   },
 };
@@ -129,7 +126,12 @@ function LiveTimer({ startedAt }: { startedAt: string }) {
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
   return (
-    <span className="tabular-nums text-xs font-mono text-green-600">
+    <span style={{
+      fontVariantNumeric: 'tabular-nums',
+      fontSize: 12,
+      fontFamily: 'monospace',
+      color: '#4DAB9A',
+    }}>
       {mins}:{secs.toString().padStart(2, '0')}
     </span>
   );
@@ -149,7 +151,12 @@ function HoldTimer({ holdStartedAt }: { holdStartedAt: string }) {
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
   return (
-    <span className="tabular-nums text-xs font-mono text-yellow-600">
+    <span style={{
+      fontVariantNumeric: 'tabular-nums',
+      fontSize: 12,
+      fontFamily: 'monospace',
+      color: '#CB912F',
+    }}>
       {mins}:{secs.toString().padStart(2, '0')} on hold
     </span>
   );
@@ -175,55 +182,116 @@ export function CallCard({ call }: { call: Call }) {
   const isOnHold = call.status === 'on_hold';
   const isRetrying = call.status === 'retrying';
 
+  // Compute border color for the card
+  const getBorderColor = () => {
+    if (isActive && !isOnHold && !isRetrying) return '#4DAB9A';
+    if (isOnHold) return '#CB912F';
+    if (isRetrying) return '#CB912F';
+    if (isDone && call.status === 'completed') return 'rgba(77,171,154,0.3)';
+    if (isDone && call.status === 'failed') return 'rgba(235,87,87,0.3)';
+    return '#E3E2DE';
+  };
+
+  // Compute status detail background/text color
+  const getStatusDetailStyle = (): React.CSSProperties => {
+    if (isOnHold) return { backgroundColor: 'rgba(203,145,47,0.06)', color: '#CB912F' };
+    if (call.status === 'navigating_menu') return { backgroundColor: 'rgba(105,64,165,0.06)', color: '#6940A5' };
+    if (call.status === 'transferred') return { backgroundColor: 'rgba(105,64,165,0.06)', color: '#6940A5' };
+    if (isRetrying) return { backgroundColor: 'rgba(203,145,47,0.06)', color: '#CB912F' };
+    return { backgroundColor: '#F7F6F3', color: '#787774' };
+  };
+
   return (
-    <Card
-      className={cn(
-        'transition-all duration-300 overflow-hidden',
-        isActive && !isOnHold && !isRetrying && 'ring-1 ring-green-400/30 shadow-sm shadow-green-500/5',
-        isOnHold && 'ring-1 ring-yellow-400/30 shadow-sm shadow-yellow-500/5',
-        isRetrying && 'ring-1 ring-amber-400/30 shadow-sm shadow-amber-500/5',
-        isDone && call.status === 'completed' && 'border-green-200/50 dark:border-green-800/30',
-        isDone && call.status === 'failed' && 'border-red-200/50 dark:border-red-800/30',
-        !isDone && !isActive && 'opacity-75'
-      )}
+    <div
+      style={{
+        backgroundColor: '#FFFFFF',
+        border: `1px solid ${getBorderColor()}`,
+        borderRadius: 8,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+        overflow: 'hidden',
+        transition: 'all 0.3s ease',
+        opacity: (!isDone && !isActive) ? 0.75 : 1,
+      }}
     >
-      <CardHeader
-        className="flex flex-row items-center gap-3 py-3 px-4 cursor-pointer hover:bg-muted/30 transition-colors"
+      {/* Header row */}
+      <div
         onClick={() => setExpanded(!expanded)}
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 16px',
+          cursor: 'pointer',
+          transition: 'background-color 0.15s ease',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F7F6F3'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
       >
         {/* Status indicator */}
-        <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl shrink-0', config.bgColor)}>
+        <div style={{
+          display: 'flex',
+          height: 40,
+          width: 40,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 8,
+          backgroundColor: config.bgColor,
+          flexShrink: 0,
+        }}>
           <StatusIcon
-            className={cn(
-              'h-4 w-4',
-              config.color,
-              (config.icon === Loader2 || config.icon === RotateCw) && 'animate-spin',
-              isActive && config.icon !== Loader2 && config.icon !== RotateCw && 'animate-pulse'
-            )}
+            style={{
+              height: 16,
+              width: 16,
+              color: config.color,
+              animation:
+                (config.icon === Loader2 || config.icon === RotateCw)
+                  ? 'spin 1s linear infinite'
+                  : (isActive && config.icon !== Loader2 && config.icon !== RotateCw)
+                    ? 'notionPulse 2s cubic-bezier(0.4,0,0.6,1) infinite'
+                    : undefined,
+            }}
           />
         </div>
 
         {/* Business info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-medium text-sm truncate">{call.business_name}</h3>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 style={{
+              fontWeight: 500,
+              fontSize: 14,
+              color: '#37352F',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              margin: 0,
+            }}>
+              {call.business_name}
+            </h3>
             {(call.retry_count ?? 0) > 0 && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+              <span style={{
+                fontSize: 10,
+                padding: '0 6px',
+                border: '1px solid #E3E2DE',
+                borderRadius: 4,
+                color: '#787774',
+                lineHeight: '18px',
+              }}>
                 attempt {(call.retry_count ?? 0) + 1}
-              </Badge>
+              </span>
             )}
           </div>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs text-muted-foreground">{call.phone_number}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+            <span style={{ fontSize: 12, color: '#787774' }}>{call.phone_number}</span>
             {SHOW_TRANSCRIPT_STATUSES.includes(call.status) && call.started_at && (
               <>
-                <span className="text-muted-foreground/50">·</span>
+                <span style={{ color: 'rgba(120,119,116,0.4)' }}>&middot;</span>
                 <LiveTimer startedAt={call.started_at} />
               </>
             )}
             {isOnHold && call.hold_started_at && (
               <>
-                <span className="text-muted-foreground/50">·</span>
+                <span style={{ color: 'rgba(120,119,116,0.4)' }}>&middot;</span>
                 <HoldTimer holdStartedAt={call.hold_started_at} />
               </>
             )}
@@ -231,65 +299,114 @@ export function CallCard({ call }: { call: Call }) {
         </div>
 
         {/* Status badge + expand */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge variant="outline" className={cn('text-xs border-none', config.bgColor, config.color)}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            fontSize: 12,
+            padding: '2px 10px',
+            borderRadius: 4,
+            backgroundColor: config.bgColor,
+            color: config.color,
+            fontWeight: 500,
+          }}>
             {isActive && (
-              <span className="relative mr-1.5 flex h-2 w-2">
-                <span className={cn(
-                  'absolute inline-flex h-full w-full rounded-full bg-current opacity-60',
-                  isOnHold ? 'animate-pulse' : 'animate-ping'
-                )} />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-current" />
+              <span style={{ position: 'relative', marginRight: 6, display: 'flex', height: 8, width: 8 }}>
+                <span style={{
+                  position: 'absolute',
+                  display: 'inline-flex',
+                  height: '100%',
+                  width: '100%',
+                  borderRadius: '50%',
+                  backgroundColor: 'currentColor',
+                  opacity: 0.6,
+                  animation: isOnHold
+                    ? 'notionPulse 2s cubic-bezier(0.4,0,0.6,1) infinite'
+                    : 'notionPing 1s cubic-bezier(0,0,0.2,1) infinite',
+                }} />
+                <span style={{
+                  position: 'relative',
+                  display: 'inline-flex',
+                  height: 8,
+                  width: 8,
+                  borderRadius: '50%',
+                  backgroundColor: 'currentColor',
+                }} />
               </span>
             )}
             {config.label}
-          </Badge>
+          </span>
           {expanded ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            <ChevronUp style={{ height: 16, width: 16, color: '#787774' }} />
           ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            <ChevronDown style={{ height: 16, width: 16, color: '#787774' }} />
           )}
         </div>
-      </CardHeader>
+      </div>
 
       {expanded && (
-        <CardContent className="pt-0 px-4 pb-4 space-y-3">
+        <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Status detail */}
           {call.status_detail && isActive && (
-            <div className={cn(
-              'flex items-center gap-2 rounded-lg px-3 py-2 text-xs',
-              isOnHold ? 'bg-yellow-50 dark:bg-yellow-950/50 text-yellow-700 dark:text-yellow-300' :
-              call.status === 'navigating_menu' ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300' :
-              call.status === 'transferred' ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300' :
-              isRetrying ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300' :
-              'bg-muted text-muted-foreground'
-            )}>
-              <StatusIcon className={cn('h-3.5 w-3.5 shrink-0', config.color)} />
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              borderRadius: 6,
+              padding: '8px 12px',
+              fontSize: 12,
+              ...getStatusDetailStyle(),
+            }}>
+              <StatusIcon style={{ height: 14, width: 14, flexShrink: 0, color: config.color }} />
               {call.status_detail}
             </div>
           )}
 
           {/* Purpose */}
-          <div className="rounded-lg bg-muted/50 p-3">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Purpose</p>
-            <p className="text-sm">{call.purpose}</p>
+          <div style={{
+            borderRadius: 6,
+            backgroundColor: '#F7F6F3',
+            padding: 12,
+          }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: '#787774', marginBottom: 4 }}>Purpose</p>
+            <p style={{ fontSize: 14, color: '#37352F', margin: 0, lineHeight: 1.5 }}>{call.purpose}</p>
           </div>
 
           {/* Live transcript */}
           {showTranscript && (
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className={cn(
-                    'absolute inline-flex h-full w-full rounded-full opacity-60',
-                    isOnHold ? 'bg-yellow-500 animate-pulse' : 'bg-green-500 animate-ping'
-                  )} />
-                  <span className={cn(
-                    'relative inline-flex h-2 w-2 rounded-full',
-                    isOnHold ? 'bg-yellow-500' : 'bg-green-500'
-                  )} />
+              <p style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: '#787774',
+                marginBottom: 8,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}>
+                <span style={{ position: 'relative', display: 'flex', height: 8, width: 8 }}>
+                  <span style={{
+                    position: 'absolute',
+                    display: 'inline-flex',
+                    height: '100%',
+                    width: '100%',
+                    borderRadius: '50%',
+                    opacity: 0.6,
+                    backgroundColor: isOnHold ? '#CB912F' : '#4DAB9A',
+                    animation: isOnHold
+                      ? 'notionPulse 2s cubic-bezier(0.4,0,0.6,1) infinite'
+                      : 'notionPing 1s cubic-bezier(0,0,0.2,1) infinite',
+                  }} />
+                  <span style={{
+                    position: 'relative',
+                    display: 'inline-flex',
+                    height: 8,
+                    width: 8,
+                    borderRadius: '50%',
+                    backgroundColor: isOnHold ? '#CB912F' : '#4DAB9A',
+                  }} />
                 </span>
-                {isOnHold ? 'On hold — staying on the line' : 'Live conversation'}
+                {isOnHold ? 'On hold \u2014 staying on the line' : 'Live conversation'}
               </p>
               <CallTranscript callId={call.id} />
             </div>
@@ -302,12 +419,31 @@ export function CallCard({ call }: { call: Call }) {
 
           {/* Result */}
           {call.result_summary && (
-            <div className="rounded-lg bg-green-50 dark:bg-green-950/50 border border-green-200/50 dark:border-green-800/30 p-3">
-              <p className="text-xs font-medium text-green-800 dark:text-green-300 mb-1.5 flex items-center gap-1.5">
-                <CheckCircle className="h-3.5 w-3.5" />
+            <div style={{
+              borderRadius: 6,
+              backgroundColor: 'rgba(77,171,154,0.06)',
+              border: '1px solid rgba(77,171,154,0.2)',
+              padding: 12,
+            }}>
+              <p style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: '#4DAB9A',
+                marginBottom: 6,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}>
+                <CheckCircle style={{ height: 14, width: 14 }} />
                 What I found
               </p>
-              <p className="text-sm text-green-900 dark:text-green-100 whitespace-pre-line leading-relaxed">
+              <p style={{
+                fontSize: 14,
+                color: '#37352F',
+                whiteSpace: 'pre-line',
+                lineHeight: 1.6,
+                margin: 0,
+              }}>
                 {call.result_summary}
               </p>
             </div>
@@ -315,21 +451,48 @@ export function CallCard({ call }: { call: Call }) {
 
           {/* Error */}
           {call.error && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200/50 dark:border-red-800/30 p-3">
-              <p className="text-xs font-medium text-red-800 dark:text-red-300 mb-1">Something went wrong</p>
-              <p className="text-sm text-red-900 dark:text-red-100">{call.error}</p>
+            <div style={{
+              borderRadius: 6,
+              backgroundColor: 'rgba(235,87,87,0.06)',
+              border: '1px solid rgba(235,87,87,0.2)',
+              padding: 12,
+            }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: '#EB5757', marginBottom: 4 }}>Something went wrong</p>
+              <p style={{ fontSize: 14, color: '#37352F', margin: 0 }}>{call.error}</p>
             </div>
           )}
 
           {/* Duration */}
           {call.duration_seconds != null && call.duration_seconds > 0 && isDone && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: '#787774',
+            }}>
+              <Clock style={{ height: 12, width: 12 }} />
               {Math.floor(call.duration_seconds / 60)}m {call.duration_seconds % 60}s
             </div>
           )}
-        </CardContent>
+        </div>
       )}
-    </Card>
+
+      {/* Keyframe for spin animation used by Loader2/RotateCw */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes notionPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+        @keyframes notionPing {
+          0% { transform: scale(1); opacity: 0.6; }
+          75%, 100% { transform: scale(2); opacity: 0; }
+        }
+      `}</style>
+    </div>
   );
 }

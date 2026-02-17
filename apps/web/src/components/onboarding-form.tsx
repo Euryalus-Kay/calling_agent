@@ -3,13 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
-import { Phone, ArrowRight, Loader2, Sparkles } from 'lucide-react';
+import { Phone, ArrowRight, Loader2 } from 'lucide-react';
 
 export function OnboardingForm({ userId }: { userId: string }) {
   const [fullName, setFullName] = useState('');
@@ -53,27 +47,47 @@ export function OnboardingForm({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md border-border/50">
-        <CardContent className="pt-10 pb-8 px-8">
+    <div
+      style={{ backgroundColor: '#F7F6F3' }}
+      className="min-h-screen flex flex-col items-center justify-center p-4"
+    >
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E3E2DE',
+          borderRadius: '8px',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+        }}
+        className="w-full max-w-md"
+      >
+        <div className="pt-10 pb-8 px-8">
           {/* Icon */}
           <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/20">
-                <Phone className="h-7 w-7 text-primary-foreground" />
-              </div>
-              <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-background">
-                <Sparkles className="h-3 w-3 text-white" />
-              </div>
+            <div
+              style={{
+                backgroundColor: '#2383E2',
+                borderRadius: '8px',
+                width: '48px',
+                height: '48px',
+              }}
+              className="flex items-center justify-center"
+            >
+              <Phone style={{ color: '#FFFFFF' }} className="h-5 w-5" />
             </div>
           </div>
 
           {/* Text */}
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold tracking-tight mb-2">
+            <h1
+              style={{ color: '#37352F' }}
+              className="text-2xl font-bold tracking-tight mb-2"
+            >
               Welcome to CallAgent
             </h1>
-            <p className="text-muted-foreground text-[15px] leading-relaxed">
+            <p
+              style={{ color: '#787774', lineHeight: '1.6' }}
+              className="text-[15px]"
+            >
               What should I call you? This is how I&apos;ll introduce myself
               when making calls on your behalf.
             </p>
@@ -82,24 +96,42 @@ export function OnboardingForm({ userId }: { userId: string }) {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="name" className="text-sm font-medium">
+              <label
+                htmlFor="name"
+                style={{ color: '#37352F' }}
+                className="text-sm font-medium block"
+              >
                 Your name
               </label>
-              <Input
+              <input
                 id="name"
+                type="text"
                 placeholder="e.g. Sarah Johnson"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 autoFocus
-                className="h-12 text-base"
                 disabled={loading || skipping}
+                style={{
+                  border: '1px solid #E3E2DE',
+                  borderRadius: '6px',
+                  color: '#37352F',
+                  backgroundColor: '#FFFFFF',
+                  outline: 'none',
+                }}
+                className="h-11 w-full px-3 text-base transition-colors placeholder:text-[#C4C4C0] focus:border-[#2383E2] focus:ring-1 focus:ring-[#2383E2] disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
-            <Button
+            <button
               type="submit"
-              className="w-full h-12 text-base font-semibold gap-2"
               disabled={!fullName.trim() || loading || skipping}
+              style={{
+                backgroundColor: '#2383E2',
+                color: '#FFFFFF',
+                borderRadius: '8px',
+                border: 'none',
+              }}
+              className="w-full h-11 text-base font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading && !skipping ? (
                 <>
@@ -112,7 +144,7 @@ export function OnboardingForm({ userId }: { userId: string }) {
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
-            </Button>
+            </button>
           </form>
 
           {/* Skip */}
@@ -120,47 +152,81 @@ export function OnboardingForm({ userId }: { userId: string }) {
             <button
               onClick={handleSkip}
               disabled={loading || skipping}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              style={{ color: '#787774', background: 'none', border: 'none' }}
+              className="text-sm hover:opacity-70 transition-opacity disabled:opacity-50 cursor-pointer"
             >
               {skipping ? (
                 <span className="flex items-center gap-1.5 justify-center">
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <Loader2
+                    style={{ color: '#787774' }}
+                    className="h-3 w-3 animate-spin"
+                  />
                   Loading...
                 </span>
               ) : (
-                'Skip for now — I\'ll set this up later'
+                'Skip for now \u2014 I\'ll set this up later'
               )}
             </button>
           </div>
 
           {/* What to expect */}
-          <div className="mt-8 pt-6 border-t border-border/50">
-            <p className="text-xs text-muted-foreground/70 text-center mb-3 uppercase font-medium tracking-wider">
+          <div
+            style={{ borderTop: '1px solid #E3E2DE' }}
+            className="mt-8 pt-6"
+          >
+            <p
+              style={{ color: '#787774' }}
+              className="text-xs text-center mb-4 uppercase font-medium tracking-wider"
+            >
               What you can do
             </p>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
-                <p className="text-xl font-bold">1</p>
-                <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                <p
+                  style={{ color: '#37352F' }}
+                  className="text-xl font-bold"
+                >
+                  1
+                </p>
+                <p
+                  style={{ color: '#787774' }}
+                  className="text-[11px] leading-tight mt-0.5"
+                >
                   Describe your task
                 </p>
               </div>
               <div>
-                <p className="text-xl font-bold">2</p>
-                <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                <p
+                  style={{ color: '#37352F' }}
+                  className="text-xl font-bold"
+                >
+                  2
+                </p>
+                <p
+                  style={{ color: '#787774' }}
+                  className="text-[11px] leading-tight mt-0.5"
+                >
                   AI plans the calls
                 </p>
               </div>
               <div>
-                <p className="text-xl font-bold">3</p>
-                <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                <p
+                  style={{ color: '#37352F' }}
+                  className="text-xl font-bold"
+                >
+                  3
+                </p>
+                <p
+                  style={{ color: '#787774' }}
+                  className="text-[11px] leading-tight mt-0.5"
+                >
                   Calls happen for you
                 </p>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

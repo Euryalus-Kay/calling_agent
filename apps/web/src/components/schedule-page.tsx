@@ -3,12 +3,6 @@
 import { useState, useMemo } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +20,6 @@ import {
   CheckCircle2,
   CalendarClock,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { ScheduledTask } from '@/types';
 
 interface SchedulePageProps {
@@ -44,11 +37,11 @@ const recurrenceLabels: Record<string, string> = {
 
 const statusConfig: Record<
   string,
-  { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive'; icon: React.ElementType }
+  { label: string; color: string; bgColor: string; icon: React.ElementType }
 > = {
-  pending: { label: 'Pending', variant: 'outline', icon: Clock },
-  executed: { label: 'Completed', variant: 'secondary', icon: CheckCircle2 },
-  cancelled: { label: 'Cancelled', variant: 'destructive', icon: XCircle },
+  pending: { label: 'Pending', color: '#787774', bgColor: 'rgba(120,119,116,0.06)', icon: Clock },
+  executed: { label: 'Completed', color: '#4DAB9A', bgColor: 'rgba(77,171,154,0.06)', icon: CheckCircle2 },
+  cancelled: { label: 'Cancelled', color: '#EB5757', bgColor: 'rgba(235,87,87,0.06)', icon: XCircle },
 };
 
 function formatScheduledTime(dateStr: string): string {
@@ -106,6 +99,43 @@ const emptyForm = {
   scheduled_for: getDefaultDateTime(),
   recurrence: null as Recurrence,
 };
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: 36,
+  padding: '0 12px',
+  fontSize: 14,
+  color: '#37352F',
+  background: '#FFFFFF',
+  border: '1px solid #E3E2DE',
+  borderRadius: 8,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const textareaStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  fontSize: 14,
+  color: '#37352F',
+  background: '#FFFFFF',
+  border: '1px solid #E3E2DE',
+  borderRadius: 8,
+  outline: 'none',
+  resize: 'vertical',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+};
+
+function handleFocus(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = '#2383E2';
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(35,131,226,0.15)';
+}
+
+function handleBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = '#E3E2DE';
+  e.currentTarget.style.boxShadow = 'none';
+}
 
 export function SchedulePage({ scheduledTasks: initial, userId }: SchedulePageProps) {
   const supabase = createSupabaseBrowserClient();
@@ -200,113 +230,186 @@ export function SchedulePage({ scheduledTasks: initial, userId }: SchedulePagePr
     const StatusIcon = config.icon;
 
     return (
-      <Card
+      <div
         key={task.id}
-        className={cn(
-          'transition-all duration-200',
-          isPast && 'opacity-60'
-        )}
+        style={{
+          background: '#FFFFFF',
+          border: '1px solid #E3E2DE',
+          borderRadius: 8,
+          boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+          padding: 16,
+          opacity: isPast ? 0.6 : 1,
+          transition: 'opacity 200ms ease',
+        }}
       >
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 min-w-0 flex-1">
-              <div
-                className={cn(
-                  'mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-                  task.status === 'pending'
-                    ? 'bg-primary/10 text-primary'
-                    : task.status === 'executed'
-                      ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-muted text-muted-foreground'
-                )}
-              >
-                <StatusIcon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-sm">{task.title}</span>
-                  {task.recurrence && (
-                    <Badge variant="secondary" className="text-[10px] gap-1 px-1.5 py-0">
-                      <Repeat className="h-2.5 w-2.5" />
-                      {recurrenceLabels[task.recurrence]}
-                    </Badge>
-                  )}
-                </div>
-                {task.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {task.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span>{formatScheduledTime(task.scheduled_for)}</span>
-                </div>
-              </div>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, minWidth: 0, flex: 1 }}>
+            <div
+              style={{
+                marginTop: 2,
+                display: 'flex',
+                height: 36,
+                width: 36,
+                flexShrink: 0,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 8,
+                background: task.status === 'pending'
+                  ? 'rgba(35,131,226,0.08)'
+                  : task.status === 'executed'
+                    ? 'rgba(77,171,154,0.08)'
+                    : 'rgba(120,119,116,0.06)',
+                color: task.status === 'pending'
+                  ? '#2383E2'
+                  : task.status === 'executed'
+                    ? '#4DAB9A'
+                    : '#787774',
+              }}
+            >
+              <StatusIcon style={{ height: 16, width: 16 }} />
             </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge variant={config.variant} className="text-xs">
-                {config.label}
-              </Badge>
-              {task.status === 'pending' && !isPast && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
-                  onClick={() => handleCancel(task.id)}
-                  disabled={cancellingId === task.id}
-                >
-                  Cancel
-                </Button>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 500, fontSize: 14, color: '#37352F' }}>{task.title}</span>
+                {task.recurrence && (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: 10,
+                    fontWeight: 500,
+                    padding: '1px 6px',
+                    borderRadius: 4,
+                    background: '#F7F6F3',
+                    color: '#787774',
+                  }}>
+                    <Repeat style={{ height: 10, width: 10 }} />
+                    {recurrenceLabels[task.recurrence]}
+                  </span>
+                )}
+              </div>
+              {task.description && (
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', margin: '4px 0 0' }}>
+                  {task.description}
+                </p>
               )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12, color: '#787774' }}>
+                <Calendar style={{ height: 12, width: 12 }} />
+                <span>{formatScheduledTime(task.scheduled_for)}</span>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <span style={{
+              fontSize: 12,
+              fontWeight: 500,
+              padding: '2px 8px',
+              borderRadius: 6,
+              background: config.bgColor,
+              color: config.color,
+            }}>
+              {config.label}
+            </span>
+            {task.status === 'pending' && !isPast && (
+              <button
+                onClick={() => handleCancel(task.id)}
+                disabled={cancellingId === task.id}
+                style={{
+                  padding: '3px 8px',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: '#787774',
+                  background: 'none',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: cancellingId === task.id ? 'not-allowed' : 'pointer',
+                  transition: 'color 120ms ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = '#EB5757'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = '#787774'; }}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 
   const hasAny = tasks.length > 0;
 
   return (
-    <div className="mx-auto max-w-2xl p-4 sm:p-6">
+    <div style={{ maxWidth: 672, margin: '0 auto', padding: '16px 24px' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Schedule</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#37352F', letterSpacing: '-0.01em', margin: 0 }}>Schedule</h1>
+          <p style={{ fontSize: 14, color: '#787774', marginTop: 4 }}>
             Manage your upcoming and past scheduled calls.
           </p>
         </div>
-        <Button onClick={openDialog} size="sm" className="gap-1.5">
-          <Plus className="h-4 w-4" />
+        <button
+          onClick={openDialog}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '6px 12px',
+            fontSize: 14,
+            fontWeight: 500,
+            color: '#FFFFFF',
+            background: '#2383E2',
+            border: 'none',
+            borderRadius: 8,
+            cursor: 'pointer',
+          }}
+        >
+          <Plus style={{ height: 16, width: 16 }} />
           Schedule New
-        </Button>
+        </button>
       </div>
 
       {!hasAny ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
-            <CalendarClock className="h-8 w-8 text-muted-foreground" />
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', textAlign: 'center' }}>
+          <div style={{ display: 'flex', height: 64, width: 64, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: '#F7F6F3', marginBottom: 16 }}>
+            <CalendarClock style={{ height: 32, width: 32, color: '#787774' }} />
           </div>
-          <h2 className="text-lg font-medium mb-1">Nothing scheduled yet</h2>
-          <p className="text-sm text-muted-foreground max-w-sm">
+          <h2 style={{ fontSize: 18, fontWeight: 500, marginBottom: 4, color: '#37352F' }}>Nothing scheduled yet</h2>
+          <p style={{ fontSize: 14, color: '#787774', maxWidth: 360 }}>
             You can schedule calls to be made automatically. Set a time and we will handle the rest.
           </p>
-          <Button onClick={openDialog} variant="outline" className="mt-4 gap-1.5">
-            <Plus className="h-4 w-4" />
+          <button
+            onClick={openDialog}
+            style={{
+              marginTop: 16,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#37352F',
+              background: '#FFFFFF',
+              border: '1px solid #E3E2DE',
+              borderRadius: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <Plus style={{ height: 16, width: 16 }} />
             Schedule your first call
-          </Button>
+          </button>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
           {/* Upcoming */}
           {upcoming.length > 0 && (
             <section>
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              <h2 style={{ fontSize: 11, fontWeight: 600, color: '#787774', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
                 Upcoming
               </h2>
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {upcoming.map((t) => renderTaskCard(t, false))}
               </div>
             </section>
@@ -315,11 +418,11 @@ export function SchedulePage({ scheduledTasks: initial, userId }: SchedulePagePr
           {/* Past */}
           {past.length > 0 && (
             <section>
-              {upcoming.length > 0 && <Separator className="mb-6" />}
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              {upcoming.length > 0 && <div style={{ height: 1, background: '#E3E2DE', marginBottom: 24 }} />}
+              <h2 style={{ fontSize: 11, fontWeight: 600, color: '#787774', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
                 Past
               </h2>
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {past.map((t) => renderTaskCard(t, true))}
               </div>
             </section>
@@ -329,48 +432,56 @@ export function SchedulePage({ scheduledTasks: initial, userId }: SchedulePagePr
 
       {/* Schedule Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent style={{ borderRadius: 8, border: '1px solid #E3E2DE', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', background: '#FFFFFF' }}>
           <DialogHeader>
-            <DialogTitle>Schedule a Call</DialogTitle>
-            <DialogDescription>
+            <DialogTitle style={{ fontSize: 18, fontWeight: 600, color: '#37352F' }}>Schedule a Call</DialogTitle>
+            <DialogDescription style={{ fontSize: 14, color: '#787774' }}>
               Set a time and we will make the call for you automatically.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">
-                Title <span className="text-destructive">*</span>
+              <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>
+                Title <span style={{ color: '#EB5757' }}>*</span>
               </label>
-              <Input
+              <input
                 placeholder="e.g. Call dentist to reschedule"
                 value={form.title}
                 onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                style={inputStyle}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Description</label>
-              <Textarea
+              <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Description</label>
+              <textarea
                 placeholder="What should the call accomplish?"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 rows={3}
+                style={textareaStyle}
+                onFocus={handleFocus as any}
+                onBlur={handleBlur as any}
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div style={{ display: 'grid', gap: 16, gridTemplateColumns: '1fr 1fr' }}>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Date & Time</label>
+                <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Date & Time</label>
                 <input
                   type="datetime-local"
                   value={form.scheduled_for}
                   onChange={(e) => setForm((f) => ({ ...f, scheduled_for: e.target.value }))}
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Repeat</label>
+                <label style={{ fontSize: 14, fontWeight: 500, marginBottom: 6, display: 'block', color: '#37352F' }}>Repeat</label>
                 <select
                   value={form.recurrence || ''}
                   onChange={(e) =>
@@ -379,7 +490,9 @@ export function SchedulePage({ scheduledTasks: initial, userId }: SchedulePagePr
                       recurrence: (e.target.value || null) as Recurrence,
                     }))
                   }
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  style={{ ...inputStyle, appearance: 'auto' as const }}
+                  onFocus={handleFocus as any}
+                  onBlur={handleBlur as any}
                 >
                   <option value="">No repeat</option>
                   <option value="daily">Daily</option>
@@ -390,13 +503,39 @@ export function SchedulePage({ scheduledTasks: initial, userId }: SchedulePagePr
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+          <DialogFooter style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+            <button
+              onClick={() => setDialogOpen(false)}
+              style={{
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#37352F',
+                background: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                cursor: 'pointer',
+              }}
+            >
               Cancel
-            </Button>
-            <Button onClick={handleCreate} disabled={saving}>
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={saving}
+              style={{
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#FFFFFF',
+                background: '#2383E2',
+                border: 'none',
+                borderRadius: 8,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
               {saving ? 'Scheduling...' : 'Schedule'}
-            </Button>
+            </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

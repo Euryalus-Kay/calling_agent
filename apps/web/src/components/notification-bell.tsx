@@ -3,11 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useNotifications } from '@/hooks/use-notifications';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Bell,
   Phone,
@@ -17,7 +12,6 @@ import {
   Info,
   CheckCheck,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { Notification } from '@/types';
 
 interface NotificationBellProps {
@@ -26,13 +20,21 @@ interface NotificationBellProps {
 
 const NOTIFICATION_ICONS: Record<
   Notification['type'],
-  React.ComponentType<{ className?: string }>
+  React.ComponentType<{ className?: string; style?: React.CSSProperties }>
 > = {
   call_completed: Phone,
   call_failed: PhoneOff,
   task_completed: CheckCircle2,
   scheduled_reminder: Clock,
   system: Info,
+};
+
+const typeIconColors: Record<Notification['type'], { bg: string; color: string }> = {
+  call_completed: { bg: 'rgba(77,171,154,0.08)', color: '#4DAB9A' },
+  call_failed: { bg: 'rgba(235,87,87,0.08)', color: '#EB5757' },
+  task_completed: { bg: 'rgba(35,131,226,0.08)', color: '#2383E2' },
+  scheduled_reminder: { bg: 'rgba(203,145,47,0.08)', color: '#CB912F' },
+  system: { bg: 'rgba(120,119,116,0.06)', color: '#787774' },
 };
 
 function timeAgo(dateString: string): string {
@@ -100,70 +102,118 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   }
 
   return (
-    <div className="relative">
-      <Button
+    <div style={{ position: 'relative' }}>
+      <button
         ref={buttonRef}
-        variant="ghost"
-        size="icon"
         onClick={() => setOpen(!open)}
-        className="relative"
+        style={{
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: 36,
+          width: 36,
+          background: 'none',
+          border: 'none',
+          borderRadius: 8,
+          cursor: 'pointer',
+          transition: 'background 120ms ease',
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEFEF'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
       >
-        <Bell className="h-5 w-5" />
+        <Bell style={{ height: 20, width: 20, color: '#37352F' }} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-destructive opacity-40" />
-            <span className="relative inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white">
+          <span style={{ position: 'absolute', top: -2, right: -2, display: 'flex', alignItems: 'center', justifyContent: 'center', height: 16, width: 16 }}>
+            <span style={{ position: 'absolute', display: 'inline-flex', height: '100%', width: '100%', borderRadius: '50%', background: '#EB5757', opacity: 0.4, animation: 'ping 1s cubic-bezier(0,0,0.2,1) infinite' }} />
+            <span style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 14,
+              width: 14,
+              borderRadius: '50%',
+              background: '#EB5757',
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#FFFFFF',
+            }}>
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           </span>
         )}
-      </Button>
+      </button>
 
       {open && (
         <div
           ref={popoverRef}
-          className="absolute right-0 top-full mt-2 z-50 w-[380px] max-w-[calc(100vw-2rem)] rounded-lg border bg-card shadow-lg"
+          style={{
+            position: 'absolute',
+            right: 0,
+            top: '100%',
+            marginTop: 8,
+            zIndex: 50,
+            width: 380,
+            maxWidth: 'calc(100vw - 2rem)',
+            borderRadius: 8,
+            border: '1px solid #E3E2DE',
+            background: '#FFFFFF',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+          }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <h3 className="font-semibold text-sm">Notifications</h3>
-            <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
+            <h3 style={{ fontWeight: 600, fontSize: 14, color: '#37352F', margin: 0 }}>Notifications</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="xs"
+                <button
                   onClick={() => markAllAsRead()}
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: '2px 8px',
+                    fontSize: 12,
+                    color: '#787774',
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                    transition: 'color 120ms ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#37352F'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = '#787774'; }}
                 >
-                  <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                  <CheckCheck style={{ height: 14, width: 14 }} />
                   Mark all read
-                </Button>
+                </button>
               )}
             </div>
           </div>
 
-          <Separator />
+          <div style={{ height: 1, background: '#E3E2DE' }} />
 
           {/* Notification list */}
-          <ScrollArea className="max-h-[400px]">
+          <div style={{ maxHeight: 400, overflow: 'auto' }}>
             {loading ? (
-              <div className="p-4 space-y-3">
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex gap-3">
-                    <Skeleton className="h-8 w-8 rounded-full shrink-0" />
-                    <div className="flex-1 space-y-1.5">
-                      <Skeleton className="h-3.5 w-3/4" />
-                      <Skeleton className="h-3 w-full" />
+                  <div key={i} style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ height: 32, width: 32, borderRadius: '50%', background: '#F7F6F3', flexShrink: 0 }} />
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ height: 14, width: '75%', background: '#F7F6F3', borderRadius: 4 }} />
+                      <div style={{ height: 12, width: '100%', background: '#F7F6F3', borderRadius: 4 }} />
                     </div>
                   </div>
                 ))}
               </div>
             ) : notifications.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                <Bell className="h-8 w-8 text-muted-foreground/40 mb-2" />
-                <p className="text-sm text-muted-foreground">No notifications yet</p>
-                <p className="text-xs text-muted-foreground/70 mt-0.5">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 16px', textAlign: 'center' }}>
+                <Bell style={{ height: 32, width: 32, color: '#E3E2DE', marginBottom: 8 }} />
+                <p style={{ fontSize: 14, color: '#787774', margin: 0 }}>No notifications yet</p>
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 2, opacity: 0.7 }}>
                   We&apos;ll notify you when something happens.
                 </p>
               </div>
@@ -171,49 +221,60 @@ export function NotificationBell({ userId }: NotificationBellProps) {
               <div>
                 {notifications.map((notification) => {
                   const Icon = NOTIFICATION_ICONS[notification.type] || Info;
+                  const iconColor = typeIconColors[notification.type] || typeIconColors.system;
                   return (
                     <button
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
-                      className={cn(
-                        'flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50',
-                        !notification.read && 'bg-primary/[0.03]'
-                      )}
+                      style={{
+                        display: 'flex',
+                        width: '100%',
+                        alignItems: 'flex-start',
+                        gap: 12,
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        background: !notification.read ? 'rgba(35,131,226,0.02)' : 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'background 120ms ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#F7F6F3'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = !notification.read ? 'rgba(35,131,226,0.02)' : 'transparent'; }}
                     >
-                      <div
-                        className={cn(
-                          'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
-                          notification.type === 'call_failed'
-                            ? 'bg-destructive/10 text-destructive'
-                            : notification.type === 'call_completed'
-                              ? 'bg-green-500/10 text-green-600 dark:text-green-400'
-                              : notification.type === 'task_completed'
-                                ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                                : notification.type === 'scheduled_reminder'
-                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                                  : 'bg-muted text-muted-foreground'
-                        )}
-                      >
-                        <Icon className="h-4 w-4" />
+                      <div style={{
+                        marginTop: 2,
+                        display: 'flex',
+                        height: 32,
+                        width: 32,
+                        flexShrink: 0,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        borderRadius: '50%',
+                        background: iconColor.bg,
+                        color: iconColor.color,
+                      }}>
+                        <Icon style={{ height: 16, width: 16 }} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              'text-sm truncate',
-                              !notification.read ? 'font-semibold' : 'font-medium'
-                            )}
-                          >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{
+                            fontSize: 14,
+                            fontWeight: !notification.read ? 600 : 500,
+                            color: '#37352F',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
                             {notification.title}
                           </span>
                           {!notification.read && (
-                            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+                            <span style={{ height: 8, width: 8, flexShrink: 0, borderRadius: '50%', background: '#2383E2' }} />
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                        <p style={{ fontSize: 12, color: '#787774', marginTop: 2, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', margin: '2px 0 0' }}>
                           {notification.body}
                         </p>
-                        <span className="text-[11px] text-muted-foreground/70 mt-1 block">
+                        <span style={{ fontSize: 11, color: '#787774', marginTop: 4, display: 'block', opacity: 0.7 }}>
                           {timeAgo(notification.created_at)}
                         </span>
                       </div>
@@ -222,23 +283,34 @@ export function NotificationBell({ userId }: NotificationBellProps) {
                 })}
               </div>
             )}
-          </ScrollArea>
+          </div>
 
           {notifications.length > 0 && (
             <>
-              <Separator />
-              <div className="p-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-xs text-muted-foreground"
+              <div style={{ height: 1, background: '#E3E2DE' }} />
+              <div style={{ padding: 8 }}>
+                <button
                   onClick={() => {
                     router.push('/notifications');
                     setOpen(false);
                   }}
+                  style={{
+                    width: '100%',
+                    padding: '6px 0',
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: '#787774',
+                    background: 'none',
+                    border: 'none',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    transition: 'background 120ms ease',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#EFEFEF'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
                 >
                   View all notifications
-                </Button>
+                </button>
               </div>
             </>
           )}

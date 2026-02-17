@@ -2,20 +2,7 @@
 
 import { useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { useTheme } from '@/components/theme-provider';
 import { toast } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -30,15 +17,11 @@ import {
   Mic,
   Bell,
   ShieldPlus,
-  Palette,
   AlertTriangle,
   Save,
   Loader2,
   Download,
   Trash2,
-  Monitor,
-  Sun,
-  Moon,
 } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import { VOICE_OPTIONS, TIMEZONE_OPTIONS } from '@/types';
@@ -49,9 +32,54 @@ interface SettingsPageProps {
   userEmail: string;
 }
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  height: 36,
+  padding: '0 12px',
+  fontSize: 14,
+  color: '#37352F',
+  background: '#FFFFFF',
+  border: '1px solid #E3E2DE',
+  borderRadius: 8,
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  appearance: 'auto' as const,
+};
+
+const textareaStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '8px 12px',
+  fontSize: 14,
+  color: '#37352F',
+  background: '#FFFFFF',
+  border: '1px solid #E3E2DE',
+  borderRadius: 8,
+  outline: 'none',
+  resize: 'vertical',
+  boxSizing: 'border-box',
+  fontFamily: 'inherit',
+};
+
+function handleFocus(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = '#2383E2';
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(35,131,226,0.15)';
+}
+
+function handleBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  e.currentTarget.style.borderColor = '#E3E2DE';
+  e.currentTarget.style.boxShadow = 'none';
+}
+
+type TabValue = 'general' | 'voice' | 'notifications' | 'insurance';
+
 export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) {
   const supabase = createSupabaseBrowserClient();
-  const { setTheme, theme: currentTheme } = useTheme();
+
+  const [activeTab, setActiveTab] = useState<TabValue>('general');
 
   // General
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -102,11 +130,6 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
     (profile?.preferences as Record<string, string>)?.doctor_notes || ''
   );
 
-  // Theme
-  const [selectedTheme, setSelectedTheme] = useState(
-    profile?.theme || currentTheme || 'system'
-  );
-
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
@@ -129,7 +152,6 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
           notification_sms: smsNotifications,
           insurance_provider: insuranceProvider,
           insurance_member_id: memberId,
-          theme: selectedTheme,
           preferences: {
             ...(profile?.preferences as Record<string, unknown>),
             ai_introduction: aiIntroduction,
@@ -153,576 +175,648 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
     setSaving(false);
   }
 
-  function handleThemeChange(value: string) {
-    setSelectedTheme(value);
-    setTheme(value);
-  }
-
   function handleExportData() {
     toast.info('Data export will be sent to your email shortly.');
   }
 
+  const tabs: { value: TabValue; label: string; icon: React.ElementType }[] = [
+    { value: 'general', label: 'General', icon: Settings },
+    { value: 'voice', label: 'Voice & AI', icon: Mic },
+    { value: 'notifications', label: 'Notifications', icon: Bell },
+    { value: 'insurance', label: 'Insurance', icon: ShieldPlus },
+  ];
+
   return (
-    <div className="max-w-4xl mx-auto p-6 pb-20">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground mt-1">
+    <div style={{ maxWidth: 896, margin: '0 auto', padding: '16px 24px', paddingBottom: 80 }}>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#37352F', margin: 0 }}>Settings</h1>
+        <p style={{ fontSize: 14, color: '#787774', marginTop: 4 }}>
           Manage your account preferences and configuration.
         </p>
       </div>
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList className="mb-6 w-full sm:w-auto flex-wrap">
-          <TabsTrigger value="general" className="gap-1.5">
-            <Settings className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">General</span>
-          </TabsTrigger>
-          <TabsTrigger value="voice" className="gap-1.5">
-            <Mic className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Voice & AI</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-1.5">
-            <Bell className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Notifications</span>
-          </TabsTrigger>
-          <TabsTrigger value="insurance" className="gap-1.5">
-            <ShieldPlus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Insurance</span>
-          </TabsTrigger>
-          <TabsTrigger value="appearance" className="gap-1.5">
-            <Palette className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Appearance</span>
-          </TabsTrigger>
-        </TabsList>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 24 }}>
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 12px',
+                fontSize: 13,
+                fontWeight: activeTab === tab.value ? 600 : 400,
+                color: activeTab === tab.value ? '#37352F' : '#787774',
+                background: activeTab === tab.value ? '#EFEFEF' : 'transparent',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                transition: 'background 120ms ease',
+              }}
+              onMouseEnter={(e) => { if (activeTab !== tab.value) e.currentTarget.style.background = '#EFEFEF'; }}
+              onMouseLeave={(e) => { if (activeTab !== tab.value) e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Icon style={{ height: 14, width: 14 }} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-        {/* General Tab */}
-        <TabsContent value="general">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>
-                  Your basic contact details. These are used when the AI makes calls on
-                  your behalf.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+      {/* ---- GENERAL TAB ---- */}
+      {activeTab === 'general' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Personal Information</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Your basic contact details. These are used when the AI makes calls on your behalf.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Full Name</label>
+                <input
+                  placeholder="John Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Phone Number</label>
+                <input
+                  placeholder="+1 (555) 123-4567"
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                />
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
+                  Used as your callback number during calls.
+                </p>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Email</label>
+                <input
+                  value={userEmail}
+                  disabled
+                  style={{ ...inputStyle, opacity: 0.5, cursor: 'not-allowed' }}
+                />
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
+                  Email is managed through your authentication provider.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Address</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Your address helps the AI find nearby businesses.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Street Address</label>
+                <input
+                  placeholder="123 Main St"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Full Name</label>
-                  <Input
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                  <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>City</label>
+                  <input
+                    placeholder="New York"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    style={inputStyle}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Phone Number</label>
-                  <Input
-                    placeholder="+1 (555) 123-4567"
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Used as your callback number during calls.
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">Email</label>
-                  <Input value={userEmail} disabled />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Email is managed through your authentication provider and cannot be
-                    changed here.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Address</CardTitle>
-                <CardDescription>
-                  Your address helps the AI find nearby businesses and provide
-                  location-relevant results.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Street Address
-                  </label>
-                  <Input
-                    placeholder="123 Main St"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                  <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>State</label>
+                  <input
+                    placeholder="NY"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    style={inputStyle}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
                   />
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-sm font-medium mb-1.5 block">City</label>
-                    <Input
-                      placeholder="New York"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1.5 block">State</label>
-                    <Input
-                      placeholder="NY"
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-1.5 block">ZIP Code</label>
-                    <Input
-                      placeholder="10001"
-                      value={zipCode}
-                      onChange={(e) => setZipCode(e.target.value)}
-                    />
-                  </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>ZIP Code</label>
+                  <input
+                    placeholder="10001"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    style={inputStyle}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                  />
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Timezone</CardTitle>
-                <CardDescription>
-                  Used for scheduling calls and displaying times correctly.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <select
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  className="flex h-9 w-full max-w-xs rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Timezone</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Used for scheduling calls and displaying times correctly.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20 }}>
+              <select
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                style={{ ...selectStyle, maxWidth: 320 }}
+                onFocus={handleFocus as any}
+                onBlur={handleBlur as any}
+              >
+                {TIMEZONE_OPTIONS.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz.replace(/_/g, ' ')}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#FFFFFF',
+                background: '#2383E2',
+                border: 'none',
+                borderRadius: 8,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? <Loader2 style={{ height: 16, width: 16 }} className="animate-spin" /> : <Save style={{ height: 16, width: 16 }} />}
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ---- VOICE & AI TAB ---- */}
+      {activeTab === 'voice' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>AI Voice Preference</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Choose how the AI sounds when making calls on your behalf.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {VOICE_OPTIONS.map((option) => (
+                <label
+                  key={option.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    borderRadius: 8,
+                    border: `1px solid ${voicePreference === option.id ? '#2383E2' : '#E3E2DE'}`,
+                    padding: 16,
+                    cursor: 'pointer',
+                    background: voicePreference === option.id ? 'rgba(35,131,226,0.02)' : '#FFFFFF',
+                    transition: 'border-color 150ms ease',
+                  }}
                 >
-                  {TIMEZONE_OPTIONS.map((tz) => (
-                    <option key={tz} value={tz}>
-                      {tz.replace(/_/g, ' ')}
-                    </option>
-                  ))}
-                </select>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
+                  <input
+                    type="radio"
+                    name="voice"
+                    value={option.id}
+                    checked={voicePreference === option.id}
+                    onChange={(e) => setVoicePreference(e.target.value)}
+                    style={{ marginTop: 2, accentColor: '#2383E2' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#37352F' }}>{option.label}</div>
+                    <div style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>{option.description}</div>
+                  </div>
+                </label>
+              ))}
             </div>
           </div>
-        </TabsContent>
 
-        {/* Voice & AI Tab */}
-        <TabsContent value="voice">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Voice Preference</CardTitle>
-                <CardDescription>
-                  Choose how the AI sounds when making calls on your behalf. This affects
-                  tone and speaking style.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {VOICE_OPTIONS.map((option) => (
-                    <label
-                      key={option.id}
-                      className={`flex items-start gap-3 rounded-lg border p-4 cursor-pointer transition-colors ${
-                        voicePreference === option.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-muted-foreground/30'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="voice"
-                        value={option.id}
-                        checked={voicePreference === option.id}
-                        onChange={(e) => setVoicePreference(e.target.value)}
-                        className="mt-0.5 accent-primary"
-                      />
-                      <div>
-                        <div className="font-medium text-sm">{option.label}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {option.description}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Daily Call Limit</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Maximum number of calls the AI can make per day.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20 }}>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={dailyCallLimit}
+                onChange={(e) =>
+                  setDailyCallLimit(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))
+                }
+                style={{ ...inputStyle, maxWidth: 120 }}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+              />
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
+                Between 1 and 100 calls per day.
+              </p>
+            </div>
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Daily Call Limit</CardTitle>
-                <CardDescription>
-                  Maximum number of calls the AI can make per day. This helps prevent
-                  unexpected usage.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={dailyCallLimit}
-                  onChange={(e) =>
-                    setDailyCallLimit(
-                      Math.max(1, Math.min(100, parseInt(e.target.value) || 1))
-                    )
-                  }
-                  className="max-w-[120px]"
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>AI Introduction Script</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Customize how the AI introduces itself. Leave blank for the default.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20 }}>
+              <textarea
+                placeholder="Hi, I'm calling on behalf of [your name]. I'd like to..."
+                value={aiIntroduction}
+                onChange={(e) => setAiIntroduction(e.target.value)}
+                rows={4}
+                style={textareaStyle}
+                onFocus={handleFocus as any}
+                onBlur={handleBlur as any}
+              />
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
+                Supports [your name] as a placeholder.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#FFFFFF',
+                background: '#2383E2',
+                border: 'none',
+                borderRadius: 8,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? <Loader2 style={{ height: 16, width: 16 }} className="animate-spin" /> : <Save style={{ height: 16, width: 16 }} />}
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ---- NOTIFICATIONS TAB ---- */}
+      {activeTab === 'notifications' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Notification Channels</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Choose how you want to receive notifications.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <ToggleSetting
+                label="Email Notifications"
+                description="Receive notifications via email for important updates."
+                checked={emailNotifications}
+                onChange={setEmailNotifications}
+              />
+              <div style={{ height: 1, background: '#E3E2DE' }} />
+              <ToggleSetting
+                label="SMS Notifications"
+                description={
+                  phoneNumber
+                    ? `Text notifications will be sent to ${phoneNumber}.`
+                    : 'Add a phone number in the General tab to enable SMS notifications.'
+                }
+                checked={smsNotifications}
+                onChange={setSmsNotifications}
+                disabled={!phoneNumber}
+              />
+            </div>
+          </div>
+
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Notification Types</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Fine-tune which events trigger notifications.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <ToggleSetting
+                label="Call Completed"
+                description="Get notified when a phone call finishes, including a summary of the outcome."
+                checked={notifyCallCompleted}
+                onChange={setNotifyCallCompleted}
+              />
+              <div style={{ height: 1, background: '#E3E2DE' }} />
+              <ToggleSetting
+                label="Task Done"
+                description="Get notified when an entire task (including all calls) has been completed."
+                checked={notifyTaskDone}
+                onChange={setNotifyTaskDone}
+              />
+              <div style={{ height: 1, background: '#E3E2DE' }} />
+              <ToggleSetting
+                label="Scheduled Reminders"
+                description="Get a reminder before a scheduled task is about to run."
+                checked={notifyScheduledReminder}
+                onChange={setNotifyScheduledReminder}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#FFFFFF',
+                background: '#2383E2',
+                border: 'none',
+                borderRadius: 8,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? <Loader2 style={{ height: 16, width: 16 }} className="animate-spin" /> : <Save style={{ height: 16, width: 16 }} />}
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ---- INSURANCE TAB ---- */}
+      {activeTab === 'insurance' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Insurance Information</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                This information is used when the AI calls healthcare providers or pharmacies.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Insurance Provider</label>
+                <input
+                  placeholder="e.g. Blue Cross Blue Shield"
+                  value={insuranceProvider}
+                  onChange={(e) => setInsuranceProvider(e.target.value)}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Between 1 and 100 calls per day.
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Member ID</label>
+                <input
+                  placeholder="e.g. XYZ123456789"
+                  value={memberId}
+                  onChange={(e) => setMemberId(e.target.value)}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
+                />
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
+                  Found on the front of your insurance card.
                 </p>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Introduction Script</CardTitle>
-                <CardDescription>
-                  Customize how the AI introduces itself at the beginning of each call. Leave
-                  blank to use the default introduction.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Hi, I'm calling on behalf of [your name]. I'd like to..."
-                  value={aiIntroduction}
-                  onChange={(e) => setAiIntroduction(e.target.value)}
-                  rows={4}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Medical Preferences</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Help the AI make better calls to medical offices and pharmacies.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Preferred Pharmacy</label>
+                <input
+                  placeholder="e.g. CVS Pharmacy on 5th Ave"
+                  value={preferredPharmacy}
+                  onChange={(e) => setPreferredPharmacy(e.target.value)}
+                  style={inputStyle}
+                  onFocus={handleFocus}
+                  onBlur={handleBlur}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  The AI will use your name and this script when starting calls. Supports
-                  [your name] as a placeholder.
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
+                  The AI will mention this pharmacy when calling about prescriptions.
                 </p>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
+              </div>
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Doctor Name & Notes</label>
+                <textarea
+                  placeholder="Dr. Smith at City Medical Center. Primary care physician."
+                  value={doctorNotes}
+                  onChange={(e) => setDoctorNotes(e.target.value)}
+                  rows={3}
+                  style={textareaStyle}
+                  onFocus={handleFocus as any}
+                  onBlur={handleBlur as any}
+                />
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
+                  Include your doctor&apos;s name, clinic, and any relevant medical notes.
+                </p>
+              </div>
             </div>
           </div>
-        </TabsContent>
 
-        {/* Notifications Tab */}
-        <TabsContent value="notifications">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Channels</CardTitle>
-                <CardDescription>
-                  Choose how you want to receive notifications about your tasks and calls.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ToggleSetting
-                  label="Email Notifications"
-                  description="Receive notifications via email for important updates."
-                  checked={emailNotifications}
-                  onChange={setEmailNotifications}
-                />
-                <Separator />
-                <ToggleSetting
-                  label="SMS Notifications"
-                  description={
-                    phoneNumber
-                      ? `Text notifications will be sent to ${phoneNumber}.`
-                      : 'Add a phone number in the General tab to enable SMS notifications.'
-                  }
-                  checked={smsNotifications}
-                  onChange={setSmsNotifications}
-                  disabled={!phoneNumber}
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Types</CardTitle>
-                <CardDescription>
-                  Fine-tune which events trigger notifications.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ToggleSetting
-                  label="Call Completed"
-                  description="Get notified when a phone call finishes, including a summary of the outcome."
-                  checked={notifyCallCompleted}
-                  onChange={setNotifyCallCompleted}
-                />
-                <Separator />
-                <ToggleSetting
-                  label="Task Done"
-                  description="Get notified when an entire task (including all calls) has been completed."
-                  checked={notifyTaskDone}
-                  onChange={setNotifyTaskDone}
-                />
-                <Separator />
-                <ToggleSetting
-                  label="Scheduled Reminders"
-                  description="Get a reminder before a scheduled task is about to run."
-                  checked={notifyScheduledReminder}
-                  onChange={setNotifyScheduledReminder}
-                />
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 14px',
+                fontSize: 14,
+                fontWeight: 500,
+                color: '#FFFFFF',
+                background: '#2383E2',
+                border: 'none',
+                borderRadius: 8,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? <Loader2 style={{ height: 16, width: 16 }} className="animate-spin" /> : <Save style={{ height: 16, width: 16 }} />}
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Insurance & Medical Tab */}
-        <TabsContent value="insurance">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Insurance Information</CardTitle>
-                <CardDescription>
-                  This information is used when the AI calls healthcare providers, pharmacies,
-                  or insurance companies on your behalf.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Insurance Provider
-                  </label>
-                  <Input
-                    placeholder="e.g. Blue Cross Blue Shield"
-                    value={insuranceProvider}
-                    onChange={(e) => setInsuranceProvider(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">Member ID</label>
-                  <Input
-                    placeholder="e.g. XYZ123456789"
-                    value={memberId}
-                    onChange={(e) => setMemberId(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Found on the front of your insurance card.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+      {/* Danger Zone */}
+      <div style={{ height: 1, background: '#E3E2DE', marginTop: 32, marginBottom: 32 }} />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Medical Preferences</CardTitle>
-                <CardDescription>
-                  Help the AI make better calls to medical offices and pharmacies.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Preferred Pharmacy
-                  </label>
-                  <Input
-                    placeholder="e.g. CVS Pharmacy on 5th Ave"
-                    value={preferredPharmacy}
-                    onChange={(e) => setPreferredPharmacy(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    The AI will mention this pharmacy when calling about prescriptions.
-                  </p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-1.5 block">
-                    Doctor Name & Notes
-                  </label>
-                  <Textarea
-                    placeholder="Dr. Smith at City Medical Center. Primary care physician."
-                    value={doctorNotes}
-                    onChange={(e) => setDoctorNotes(e.target.value)}
-                    rows={3}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Include your doctor&apos;s name, clinic, and any other relevant
-                    medical notes.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Appearance Tab */}
-        <TabsContent value="appearance">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Theme</CardTitle>
-                <CardDescription>
-                  Select your preferred color scheme. &quot;System&quot; will automatically match your
-                  operating system setting.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {[
-                    {
-                      value: 'system',
-                      label: 'System',
-                      icon: Monitor,
-                      desc: 'Match OS setting',
-                    },
-                    {
-                      value: 'light',
-                      label: 'Light',
-                      icon: Sun,
-                      desc: 'Always light',
-                    },
-                    {
-                      value: 'dark',
-                      label: 'Dark',
-                      icon: Moon,
-                      desc: 'Always dark',
-                    },
-                  ].map((option) => (
-                    <label
-                      key={option.value}
-                      className={`flex flex-col items-center gap-2 rounded-lg border p-4 cursor-pointer transition-colors ${
-                        selectedTheme === option.value
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-muted-foreground/30'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="theme"
-                        value={option.value}
-                        checked={selectedTheme === option.value}
-                        onChange={() => handleThemeChange(option.value)}
-                        className="sr-only"
-                      />
-                      <option.icon className="h-6 w-6" />
-                      <div className="text-center">
-                        <div className="font-medium text-sm">{option.label}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {option.desc}
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {/* Danger Zone - always visible at bottom */}
-      <Separator className="my-8" />
-
-      <Card className="border-destructive/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-destructive">
-            <AlertTriangle className="h-5 w-5" />
+      <div style={{
+        background: '#FFFFFF',
+        border: '1px solid rgba(235,87,87,0.3)',
+        borderRadius: 8,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+      }}>
+        <div style={{ padding: '16px 20px' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, fontWeight: 600, color: '#EB5757', margin: 0 }}>
+            <AlertTriangle style={{ height: 18, width: 18 }} />
             Danger Zone
-          </CardTitle>
-          <CardDescription>
+          </h2>
+          <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
             Irreversible and destructive actions. Please proceed with caution.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-3">
-          <Button variant="outline" onClick={handleExportData}>
-            <Download className="h-4 w-4" />
+          </p>
+        </div>
+        <div style={{ height: 1, background: '#E3E2DE' }} />
+        <div style={{ padding: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button
+            onClick={handleExportData}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#37352F',
+              background: '#FFFFFF',
+              border: '1px solid #E3E2DE',
+              borderRadius: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <Download style={{ height: 16, width: 16 }} />
             Export My Data
-          </Button>
+          </button>
 
           <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="h-4 w-4" />
+              <button
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: '#FFFFFF',
+                  background: '#EB5757',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                }}
+              >
+                <Trash2 style={{ height: 16, width: 16 }} />
                 Delete Account
-              </Button>
+              </button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent style={{ borderRadius: 8, border: '1px solid #E3E2DE', boxShadow: '0 1px 2px rgba(0,0,0,0.06)', background: '#FFFFFF' }}>
               <DialogHeader>
-                <DialogTitle>Are you absolutely sure?</DialogTitle>
-                <DialogDescription>
-                  This action cannot be undone. This will permanently delete your account
-                  and remove all of your data from our servers, including call history,
-                  contacts, and settings.
+                <DialogTitle style={{ fontSize: 18, fontWeight: 600, color: '#37352F' }}>Are you absolutely sure?</DialogTitle>
+                <DialogDescription style={{ fontSize: 14, color: '#787774' }}>
+                  This action cannot be undone. This will permanently delete your account and remove all
+                  of your data from our servers, including call history, contacts, and settings.
                 </DialogDescription>
               </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="outline"
+              <DialogFooter style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+                <button
                   onClick={() => setDeleteDialogOpen(false)}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: '#37352F',
+                    background: '#FFFFFF',
+                    border: '1px solid #E3E2DE',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                  }}
                 >
                   Cancel
-                </Button>
-                <Button
-                  variant="destructive"
+                </button>
+                <button
                   onClick={() => {
                     setDeleteDialogOpen(false);
                     toast.info(
                       'Account deletion request received. Please contact support to complete this process.'
                     );
                   }}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: '#FFFFFF',
+                    background: '#EB5757',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                  }}
                 >
                   Yes, delete my account
-                </Button>
+                </button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
@@ -742,10 +836,10 @@ function ToggleSetting({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex-1">
-        <div className="text-sm font-medium">{label}</div>
-        <div className="text-xs text-muted-foreground">{description}</div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, opacity: disabled ? 0.5 : 1 }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: '#37352F' }}>{label}</div>
+        <div style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>{description}</div>
       </div>
       <button
         type="button"
@@ -753,21 +847,30 @@ function ToggleSetting({
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`
-          relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent
-          transition-colors duration-200 ease-in-out
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-          disabled:cursor-not-allowed disabled:opacity-50
-          ${checked ? 'bg-primary' : 'bg-input'}
-        `}
+        style={{
+          position: 'relative',
+          width: 40,
+          height: 22,
+          borderRadius: 11,
+          border: 'none',
+          background: checked ? '#2383E2' : '#E3E2DE',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          transition: 'background 200ms ease',
+          flexShrink: 0,
+          padding: 0,
+        }}
       >
-        <span
-          className={`
-            pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0
-            transition duration-200 ease-in-out
-            ${checked ? 'translate-x-5' : 'translate-x-0'}
-          `}
-        />
+        <span style={{
+          position: 'absolute',
+          top: 2,
+          left: checked ? 20 : 2,
+          width: 18,
+          height: 18,
+          borderRadius: '50%',
+          background: '#FFFFFF',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+          transition: 'left 200ms ease',
+        }} />
       </button>
     </div>
   );

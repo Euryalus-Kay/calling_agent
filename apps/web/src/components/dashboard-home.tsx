@@ -3,10 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   Send,
@@ -50,54 +46,36 @@ const QUICK_ACTIONS = [
     label: 'Book appointment',
     description: 'Doctor, dentist, or specialist',
     prompt: 'Book a doctor appointment for me this week',
-    gradient: 'from-blue-500/10 to-blue-600/5',
-    iconBg: 'bg-blue-500/10 dark:bg-blue-500/20',
-    iconColor: 'text-blue-600 dark:text-blue-400',
   },
   {
     icon: Wrench,
     label: 'Find a service',
     description: 'Plumber, electrician, handyman',
     prompt: 'Find a plumber near me who can come today',
-    gradient: 'from-amber-500/10 to-amber-600/5',
-    iconBg: 'bg-amber-500/10 dark:bg-amber-500/20',
-    iconColor: 'text-amber-600 dark:text-amber-400',
   },
   {
     icon: UtensilsCrossed,
     label: 'Make reservation',
     description: 'Restaurants and dining',
     prompt: 'Make a dinner reservation for 2 this Saturday evening',
-    gradient: 'from-rose-500/10 to-rose-600/5',
-    iconBg: 'bg-rose-500/10 dark:bg-rose-500/20',
-    iconColor: 'text-rose-600 dark:text-rose-400',
   },
   {
     icon: Search,
     label: 'Check availability',
     description: 'Products and store stock',
     prompt: 'Check if any nearby stores have this product in stock',
-    gradient: 'from-emerald-500/10 to-emerald-600/5',
-    iconBg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
-    iconColor: 'text-emerald-600 dark:text-emerald-400',
   },
   {
     icon: Car,
     label: 'Auto service',
     description: 'Oil change, repairs, detailing',
     prompt: 'Schedule an oil change for my car this weekend',
-    gradient: 'from-violet-500/10 to-violet-600/5',
-    iconBg: 'bg-violet-500/10 dark:bg-violet-500/20',
-    iconColor: 'text-violet-600 dark:text-violet-400',
   },
   {
     icon: Phone,
     label: 'General inquiry',
     description: 'Hours, pricing, and info',
     prompt: 'Call this business and ask about their hours and pricing',
-    gradient: 'from-slate-500/10 to-slate-600/5',
-    iconBg: 'bg-slate-500/10 dark:bg-slate-500/20',
-    iconColor: 'text-slate-600 dark:text-slate-400',
   },
 ];
 
@@ -129,38 +107,34 @@ function getStatusConfig(status: string) {
     case 'completed':
       return {
         label: 'Completed',
-        color: 'text-emerald-700 dark:text-emerald-400',
-        bg: 'bg-emerald-50 dark:bg-emerald-500/10',
-        ringColor: 'ring-emerald-200 dark:ring-emerald-500/20',
+        color: '#4DAB9A',
+        bgColor: 'rgba(77, 171, 154, 0.06)',
         icon: CheckCircle,
-        dotColor: 'bg-emerald-500',
+        dotColor: '#4DAB9A',
       };
     case 'in_progress':
       return {
         label: 'In Progress',
-        color: 'text-blue-700 dark:text-blue-400',
-        bg: 'bg-blue-50 dark:bg-blue-500/10',
-        ringColor: 'ring-blue-200 dark:ring-blue-500/20',
+        color: '#2383E2',
+        bgColor: 'rgba(35, 131, 226, 0.06)',
         icon: PhoneCall,
-        dotColor: 'bg-blue-500',
+        dotColor: '#2383E2',
       };
     case 'failed':
       return {
         label: 'Failed',
-        color: 'text-red-700 dark:text-red-400',
-        bg: 'bg-red-50 dark:bg-red-500/10',
-        ringColor: 'ring-red-200 dark:ring-red-500/20',
+        color: '#EB5757',
+        bgColor: 'rgba(235, 87, 87, 0.06)',
         icon: AlertCircle,
-        dotColor: 'bg-red-500',
+        dotColor: '#EB5757',
       };
     default:
       return {
         label: 'Pending',
-        color: 'text-slate-600 dark:text-slate-400',
-        bg: 'bg-slate-50 dark:bg-slate-500/10',
-        ringColor: 'ring-slate-200 dark:ring-slate-500/20',
+        color: '#787774',
+        bgColor: 'rgba(120, 119, 116, 0.06)',
         icon: Clock,
-        dotColor: 'bg-slate-400',
+        dotColor: '#787774',
       };
   }
 }
@@ -194,10 +168,7 @@ function AnimatedNumber({ value }: { value: number }) {
   }, [value]);
 
   return (
-    <span
-      ref={ref}
-      className="tabular-nums transition-all duration-150"
-    >
+    <span ref={ref} style={{ fontVariantNumeric: 'tabular-nums' }}>
       {displayed.toLocaleString()}
     </span>
   );
@@ -263,91 +234,263 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
   const isNewUser = recentTasks.length === 0 && stats.total_tasks === 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12 space-y-10">
+    <div
+      style={{
+        maxWidth: 1080,
+        marginLeft: 'auto',
+        marginRight: 'auto',
+        padding: '48px 24px',
+      }}
+    >
       {/* Hero: Greeting + Input */}
-      <div className="relative">
-        <div className="absolute inset-0 -m-4 rounded-3xl bg-gradient-to-br from-primary/[0.04] via-primary/[0.02] to-transparent dark:from-primary/[0.08] dark:via-primary/[0.03] pointer-events-none" />
-        <div className="relative">
-          <div className="mb-6">
-            <p className="text-sm font-medium text-primary/70 mb-1 tracking-wide uppercase">
-              {getGreeting()}
-            </p>
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-              {isNewUser
-                ? `${firstName}, let\u2019s make your first call`
-                : `${firstName}, what can I call about?`}
-            </h1>
-            <p className="text-muted-foreground mt-2 text-[15px]">
-              {isNewUser
-                ? 'Type what you need below, or tap a quick action to try it out instantly.'
-                : 'Describe your task and I\u2019ll handle every phone call from start to finish.'}
-            </p>
-          </div>
+      <div style={{ marginBottom: 48 }}>
+        <div style={{ marginBottom: 24 }}>
+          <p
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: '#787774',
+              marginBottom: 4,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {getGreeting()}
+          </p>
+          <h1
+            style={{
+              fontSize: 32,
+              fontWeight: 700,
+              color: '#37352F',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2,
+              margin: 0,
+            }}
+          >
+            {isNewUser
+              ? `${firstName}, let\u2019s make your first call`
+              : `${firstName}, what can I call about?`}
+          </h1>
+          <p
+            style={{
+              color: '#787774',
+              marginTop: 8,
+              fontSize: 15,
+              lineHeight: 1.5,
+            }}
+          >
+            {isNewUser
+              ? 'Type what you need below, or tap a quick action to try it out instantly.'
+              : 'Describe your task and I\u2019ll handle every phone call from start to finish.'}
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit}>
-            <fieldset disabled={loading} className="relative">
-              <div className="relative rounded-2xl border-2 border-border/60 bg-background shadow-sm shadow-black/[0.03] transition-all duration-200 focus-within:border-primary/40 focus-within:shadow-md focus-within:shadow-primary/[0.06]">
-                <Textarea
-                  placeholder={isNewUser
+        <form onSubmit={handleSubmit}>
+          <fieldset disabled={loading} style={{ border: 'none', padding: 0, margin: 0 }}>
+            <div
+              style={{
+                position: 'relative',
+                borderRadius: 8,
+                border: '1px solid #E3E2DE',
+                backgroundColor: '#FFFFFF',
+                transition: 'border-color 0.15s ease',
+              }}
+              onFocus={(e) => {
+                const container = e.currentTarget;
+                container.style.borderColor = '#2383E2';
+              }}
+              onBlur={(e) => {
+                const container = e.currentTarget;
+                if (!container.contains(e.relatedTarget as Node)) {
+                  container.style.borderColor = '#E3E2DE';
+                }
+              }}
+            >
+              <textarea
+                placeholder={
+                  isNewUser
                     ? 'Try: "Book a dentist appointment for next Tuesday afternoon"'
-                    : 'e.g. Book a dentist appointment for next Tuesday afternoon...'}
-                  value={taskText}
-                  onChange={(e) => setTaskText(e.target.value)}
-                  className="min-h-[100px] border-0 bg-transparent px-5 pt-5 pb-16 text-[15px] leading-relaxed resize-none shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/50"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                      handleSubmit(e);
+                    : 'e.g. Book a dentist appointment for next Tuesday afternoon...'
+                }
+                value={taskText}
+                onChange={(e) => setTaskText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    handleSubmit(e);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  minHeight: 100,
+                  border: 'none',
+                  outline: 'none',
+                  backgroundColor: 'transparent',
+                  padding: '16px 20px 56px 20px',
+                  fontSize: 15,
+                  lineHeight: 1.6,
+                  color: '#37352F',
+                  resize: 'none',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 12,
+                  left: 16,
+                  right: 16,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: '#B4B4B0',
+                    userSelect: 'none',
+                  }}
+                >
+                  {taskText.length > 0 ? (
+                    <>
+                      Press{' '}
+                      <kbd
+                        style={{
+                          display: 'inline-block',
+                          padding: '1px 5px',
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                          border: '1px solid #E3E2DE',
+                          borderRadius: 4,
+                          backgroundColor: '#F7F6F3',
+                          color: '#787774',
+                        }}
+                      >
+                        {typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent)
+                          ? '\u2318'
+                          : 'Ctrl'}
+                      </kbd>{' '}
+                      +{' '}
+                      <kbd
+                        style={{
+                          display: 'inline-block',
+                          padding: '1px 5px',
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                          border: '1px solid #E3E2DE',
+                          borderRadius: 4,
+                          backgroundColor: '#F7F6F3',
+                          color: '#787774',
+                        }}
+                      >
+                        Enter
+                      </kbd>{' '}
+                      to send
+                    </>
+                  ) : null}
+                </span>
+                <button
+                  type="submit"
+                  disabled={!taskText.trim() || loading}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 16px',
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: '#FFFFFF',
+                    backgroundColor:
+                      !taskText.trim() || loading ? '#B4B4B0' : '#2383E2',
+                    border: 'none',
+                    borderRadius: 8,
+                    cursor: !taskText.trim() || loading ? 'not-allowed' : 'pointer',
+                    transition: 'background-color 0.15s ease',
+                    fontFamily: 'inherit',
+                    lineHeight: 1.4,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (taskText.trim() && !loading) {
+                      e.currentTarget.style.backgroundColor = '#1B6DBF';
                     }
                   }}
-                />
-                <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground/50 select-none">
-                    {taskText.length > 0 ? (
-                      <>Press <kbd className="rounded border border-border/60 bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono">
-                        {typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent) ? '\u2318' : 'Ctrl'}
-                      </kbd> + <kbd className="rounded border border-border/60 bg-muted/50 px-1.5 py-0.5 text-[10px] font-mono">
-                        Enter
-                      </kbd> to send</>
-                    ) : null}
-                  </span>
-                  <Button
-                    type="submit"
-                    disabled={!taskText.trim() || loading}
-                    className="rounded-xl px-5 gap-2 h-9 text-sm font-medium shadow-sm transition-all duration-200 hover:shadow-md"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-3.5 w-3.5" />
-                        Send task
-                      </>
-                    )}
-                  </Button>
-                </div>
+                  onMouseLeave={(e) => {
+                    if (taskText.trim() && !loading) {
+                      e.currentTarget.style.backgroundColor = '#2383E2';
+                    }
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2
+                        style={{
+                          width: 14,
+                          height: 14,
+                          animation: 'spin 1s linear infinite',
+                        }}
+                      />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Send style={{ width: 14, height: 14 }} />
+                      Send task
+                    </>
+                  )}
+                </button>
               </div>
-            </fieldset>
-          </form>
-        </div>
+            </div>
+          </fieldset>
+        </form>
       </div>
 
-      {/* Quick Actions — one click creates a task */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
-          <Zap className="h-4 w-4 text-primary/60" />
-          <h2 className="text-sm font-semibold text-foreground/70 tracking-wide uppercase">
+      {/* Quick Actions */}
+      <div style={{ marginBottom: 48 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 16,
+          }}
+        >
+          <Zap
+            style={{ width: 16, height: 16, color: '#787774', strokeWidth: 1.5 }}
+          />
+          <h2
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#787774',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.05em',
+              margin: 0,
+            }}
+          >
             {isNewUser ? 'Try one of these' : 'Quick actions'}
           </h2>
           {isNewUser && (
-            <Badge variant="secondary" className="text-[10px] font-medium ml-1">
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: '#787774',
+                backgroundColor: '#F7F6F3',
+                padding: '2px 8px',
+                borderRadius: 4,
+                marginLeft: 4,
+              }}
+            >
               One click to start
-            </Badge>
+            </span>
           )}
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: 12,
+          }}
+        >
           {QUICK_ACTIONS.map((action) => {
             const isActionLoading = quickActionLoading === action.label;
             return (
@@ -355,26 +498,99 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
                 key={action.label}
                 onClick={() => handleQuickAction(action)}
                 disabled={!!quickActionLoading || loading}
-                className={`group relative flex flex-col gap-3 rounded-2xl border border-border/50 bg-gradient-to-br ${action.gradient} p-4 text-left transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-black/[0.04] hover:border-border active:scale-[0.98] dark:hover:shadow-black/[0.15] disabled:opacity-60 disabled:hover:scale-100`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column' as const,
+                  gap: 12,
+                  padding: 16,
+                  textAlign: 'left' as const,
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E3E2DE',
+                  borderRadius: 8,
+                  cursor:
+                    !!quickActionLoading || loading ? 'not-allowed' : 'pointer',
+                  opacity: !!quickActionLoading || loading ? 0.6 : 1,
+                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                  position: 'relative' as const,
+                  fontFamily: 'inherit',
+                }}
+                onMouseEnter={(e) => {
+                  if (!quickActionLoading && !loading) {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow =
+                      '0 4px 12px rgba(0,0,0,0.08)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
               >
                 <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-xl ${action.iconBg} transition-transform duration-200 group-hover:scale-110`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    backgroundColor: '#F7F6F3',
+                  }}
                 >
                   {isActionLoading ? (
-                    <Loader2 className={`h-5 w-5 ${action.iconColor} animate-spin`} />
+                    <Loader2
+                      style={{
+                        width: 20,
+                        height: 20,
+                        color: '#787774',
+                        strokeWidth: 1.5,
+                        animation: 'spin 1s linear infinite',
+                      }}
+                    />
                   ) : (
-                    <action.icon className={`h-5 w-5 ${action.iconColor}`} />
+                    <action.icon
+                      style={{
+                        width: 20,
+                        height: 20,
+                        color: '#787774',
+                        strokeWidth: 1.5,
+                      }}
+                    />
                   )}
                 </div>
                 <div>
-                  <span className="text-sm font-semibold block">
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: '#37352F',
+                      display: 'block',
+                    }}
+                  >
                     {isActionLoading ? 'Creating...' : action.label}
                   </span>
-                  <span className="text-xs text-muted-foreground mt-0.5 block">
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: '#787774',
+                      display: 'block',
+                      marginTop: 2,
+                    }}
+                  >
                     {action.description}
                   </span>
                 </div>
-                <ArrowUpRight className="absolute top-3 right-3 h-3.5 w-3.5 text-muted-foreground/30 transition-all duration-200 group-hover:text-muted-foreground/60 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                <ArrowUpRight
+                  style={{
+                    position: 'absolute' as const,
+                    top: 12,
+                    right: 12,
+                    width: 14,
+                    height: 14,
+                    color: '#B4B4B0',
+                    strokeWidth: 1.5,
+                  }}
+                />
               </button>
             );
           })}
@@ -383,166 +599,448 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
 
       {/* Stats Cards */}
       {stats.total_tasks > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="h-4 w-4 text-primary/60" />
-            <h2 className="text-sm font-semibold text-foreground/70 tracking-wide uppercase">
+        <div style={{ marginBottom: 48 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 16,
+            }}
+          >
+            <TrendingUp
+              style={{ width: 16, height: 16, color: '#787774', strokeWidth: 1.5 }}
+            />
+            <h2
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: '#787774',
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.05em',
+                margin: 0,
+              }}
+            >
               Your stats
             </h2>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Card className="relative overflow-hidden border-border/50">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.06] to-transparent dark:from-emerald-500/[0.1] pointer-events-none" />
-              <CardContent className="relative p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20">
-                    <CheckCircle className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                </div>
-                <p className="text-3xl font-bold tracking-tight">
-                  <AnimatedNumber value={stats.total_tasks} />
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">
-                  Tasks created
-                </p>
-              </CardContent>
-            </Card>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 12,
+            }}
+          >
+            {/* Tasks created */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                padding: 20,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  backgroundColor: '#F7F6F3',
+                  marginBottom: 12,
+                }}
+              >
+                <CheckCircle
+                  style={{ width: 18, height: 18, color: '#4DAB9A', strokeWidth: 1.5 }}
+                />
+              </div>
+              <p
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: '#37352F',
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                <AnimatedNumber value={stats.total_tasks} />
+              </p>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: '#787774',
+                  margin: '6px 0 0 0',
+                  fontWeight: 500,
+                }}
+              >
+                Tasks created
+              </p>
+            </div>
 
-            <Card className="relative overflow-hidden border-border/50">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.06] to-transparent dark:from-blue-500/[0.1] pointer-events-none" />
-              <CardContent className="relative p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 dark:bg-blue-500/20">
-                    <PhoneForwarded className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <p className="text-3xl font-bold tracking-tight">
-                  <AnimatedNumber value={stats.total_calls} />
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">
-                  Calls made
-                </p>
-              </CardContent>
-            </Card>
+            {/* Calls made */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                padding: 20,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  backgroundColor: '#F7F6F3',
+                  marginBottom: 12,
+                }}
+              >
+                <PhoneForwarded
+                  style={{ width: 18, height: 18, color: '#2383E2', strokeWidth: 1.5 }}
+                />
+              </div>
+              <p
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: '#37352F',
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                <AnimatedNumber value={stats.total_calls} />
+              </p>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: '#787774',
+                  margin: '6px 0 0 0',
+                  fontWeight: 500,
+                }}
+              >
+                Calls made
+              </p>
+            </div>
 
-            <Card className="relative overflow-hidden border-border/50">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.06] to-transparent dark:from-violet-500/[0.1] pointer-events-none" />
-              <CardContent className="relative p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10 dark:bg-violet-500/20">
-                    <Sparkles className="h-4.5 w-4.5 text-violet-600 dark:text-violet-400" />
-                  </div>
-                </div>
-                <p className="text-3xl font-bold tracking-tight">
-                  <AnimatedNumber value={successRate} />
-                  <span className="text-lg font-semibold text-muted-foreground">%</span>
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">
-                  Success rate
-                </p>
-              </CardContent>
-            </Card>
+            {/* Success rate */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                padding: 20,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  backgroundColor: '#F7F6F3',
+                  marginBottom: 12,
+                }}
+              >
+                <Sparkles
+                  style={{ width: 18, height: 18, color: '#787774', strokeWidth: 1.5 }}
+                />
+              </div>
+              <p
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: '#37352F',
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                <AnimatedNumber value={successRate} />
+                <span
+                  style={{ fontSize: 18, fontWeight: 600, color: '#787774' }}
+                >
+                  %
+                </span>
+              </p>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: '#787774',
+                  margin: '6px 0 0 0',
+                  fontWeight: 500,
+                }}
+              >
+                Success rate
+              </p>
+            </div>
 
-            <Card className="relative overflow-hidden border-border/50">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.06] to-transparent dark:from-amber-500/[0.1] pointer-events-none" />
-              <CardContent className="relative p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 dark:bg-amber-500/20">
-                    <Timer className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400" />
-                  </div>
-                </div>
-                <p className="text-3xl font-bold tracking-tight">
-                  <AnimatedNumber value={stats.total_call_minutes} />
-                  <span className="text-lg font-semibold text-muted-foreground">m</span>
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 font-medium">
-                  Minutes of calls
-                </p>
-              </CardContent>
-            </Card>
+            {/* Minutes of calls */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                padding: 20,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  backgroundColor: '#F7F6F3',
+                  marginBottom: 12,
+                }}
+              >
+                <Timer
+                  style={{ width: 18, height: 18, color: '#787774', strokeWidth: 1.5 }}
+                />
+              </div>
+              <p
+                style={{
+                  fontSize: 28,
+                  fontWeight: 700,
+                  color: '#37352F',
+                  margin: 0,
+                  lineHeight: 1.1,
+                }}
+              >
+                <AnimatedNumber value={stats.total_call_minutes} />
+                <span
+                  style={{ fontSize: 18, fontWeight: 600, color: '#787774' }}
+                >
+                  m
+                </span>
+              </p>
+              <p
+                style={{
+                  fontSize: 12,
+                  color: '#787774',
+                  margin: '6px 0 0 0',
+                  fontWeight: 500,
+                }}
+              >
+                Minutes of calls
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       {/* Recent Activity */}
       {recentTasks.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary/60" />
-              <h2 className="text-sm font-semibold text-foreground/70 tracking-wide uppercase">
+        <div style={{ marginBottom: 48 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 16,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Clock
+                style={{ width: 16, height: 16, color: '#787774', strokeWidth: 1.5 }}
+              />
+              <h2
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#787774',
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.05em',
+                  margin: 0,
+                }}
+              >
                 Recent activity
               </h2>
             </div>
             <Link
               href="/history"
-              className="group flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#2383E2',
+                textDecoration: 'none',
+              }}
             >
               View all
-              <ArrowRight className="h-3 w-3 transition-transform duration-200 group-hover:translate-x-0.5" />
+              <ArrowRight style={{ width: 12, height: 12 }} />
             </Link>
           </div>
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             {recentTasks.slice(0, 5).map((task) => {
               const statusConfig = getStatusConfig(task.status);
               const StatusIcon = statusConfig.icon;
               const numCalls = callCounts[task.id] ?? 0;
 
               return (
-                <Link key={task.id} href={`/tasks/${task.id}`}>
-                  <Card className="group relative overflow-hidden border-border/50 transition-all duration-200 hover:shadow-md hover:shadow-black/[0.04] hover:border-border dark:hover:shadow-black/[0.15]">
-                    <CardContent className="p-4 flex items-center gap-4">
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-xl ${statusConfig.bg} ring-1 ${statusConfig.ringColor} shrink-0 transition-transform duration-200 group-hover:scale-105`}
+                <Link
+                  key={task.id}
+                  href={`/tasks/${task.id}`}
+                  style={{ textDecoration: 'none', color: 'inherit' }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 14,
+                      padding: '12px 16px',
+                      borderRadius: 8,
+                      transition:
+                        'background-color 0.1s ease',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#EFEFEF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        backgroundColor: statusConfig.bgColor,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <StatusIcon
+                        style={{
+                          width: 16,
+                          height: 16,
+                          color: statusConfig.color,
+                          strokeWidth: 1.5,
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 500,
+                          color: '#37352F',
+                          margin: 0,
+                          whiteSpace: 'nowrap' as const,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
                       >
-                        <StatusIcon
-                          className={`h-4.5 w-4.5 ${statusConfig.color} ${
-                            task.status === 'in_progress' ? 'animate-pulse' : ''
-                          }`}
-                        />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <p className="text-sm font-medium truncate">
-                            {task.input_text}
+                        {task.input_text}
+                      </p>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          marginTop: 2,
+                        }}
+                      >
+                        {task.summary && (
+                          <p
+                            style={{
+                              fontSize: 12,
+                              color: '#787774',
+                              margin: 0,
+                              whiteSpace: 'nowrap' as const,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: 280,
+                            }}
+                          >
+                            {task.summary}
                           </p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {task.summary && (
-                            <p className="text-xs text-muted-foreground truncate max-w-[280px]">
-                              {task.summary}
-                            </p>
-                          )}
-                          {numCalls > 0 && (
-                            <span className="flex items-center gap-1 text-[11px] text-muted-foreground/70 shrink-0">
-                              <Phone className="h-3 w-3" />
-                              {numCalls} {numCalls === 1 ? 'call' : 'calls'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <Badge
-                          variant="secondary"
-                          className={`text-[10px] px-2 py-0.5 font-medium border-0 ${statusConfig.bg} ${statusConfig.color}`}
-                        >
+                        )}
+                        {numCalls > 0 && (
                           <span
-                            className={`inline-block h-1.5 w-1.5 rounded-full ${statusConfig.dotColor} mr-1.5 ${
-                              task.status === 'in_progress' ? 'animate-pulse' : ''
-                            }`}
-                          />
-                          {statusConfig.label}
-                        </Badge>
-                        <span className="text-[11px] text-muted-foreground/60 font-medium">
-                          {getTimeAgo(task.created_at)}
-                        </span>
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 3,
+                              fontSize: 11,
+                              color: '#B4B4B0',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <Phone style={{ width: 11, height: 11 }} />
+                            {numCalls} {numCalls === 1 ? 'call' : 'calls'}
+                          </span>
+                        )}
                       </div>
+                    </div>
 
-                      <ChevronRight className="h-4 w-4 text-muted-foreground/0 transition-all duration-200 group-hover:text-muted-foreground/40 group-hover:translate-x-0.5 shrink-0" />
-                    </CardContent>
-                  </Card>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column' as const,
+                        alignItems: 'flex-end',
+                        gap: 4,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: statusConfig.color,
+                          padding: '2px 8px',
+                          borderRadius: 4,
+                          backgroundColor: statusConfig.bgColor,
+                        }}
+                      >
+                        <span
+                          style={{
+                            display: 'inline-block',
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            backgroundColor: statusConfig.dotColor,
+                          }}
+                        />
+                        {statusConfig.label}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: '#B4B4B0',
+                          fontWeight: 500,
+                        }}
+                      >
+                        {getTimeAgo(task.created_at)}
+                      </span>
+                    </div>
+
+                    <ChevronRight
+                      style={{
+                        width: 16,
+                        height: 16,
+                        color: '#E3E2DE',
+                        flexShrink: 0,
+                        strokeWidth: 1.5,
+                      }}
+                    />
+                  </div>
                 </Link>
               );
             })}
@@ -552,70 +1050,234 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
 
       {/* New User Welcome */}
       {isNewUser && (
-        <div className="relative">
-          <Card className="relative overflow-hidden border-border/50">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/[0.05] to-transparent rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-            <CardContent className="relative py-10 px-6">
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                {/* Left: how it works */}
-                <div className="flex flex-col items-center md:items-start gap-4 md:w-1/2">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/10">
-                      <MessageCircle className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold tracking-tight">
-                        How it works
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        3 simple steps
-                      </p>
-                    </div>
+        <div style={{ marginBottom: 48 }}>
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E3E2DE',
+              borderRadius: 8,
+              padding: '40px 32px',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap' as const,
+                gap: 40,
+              }}
+            >
+              {/* Left: how it works */}
+              <div style={{ flex: '1 1 320px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginBottom: 24,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      backgroundColor: '#F7F6F3',
+                    }}
+                  >
+                    <MessageCircle
+                      style={{
+                        width: 20,
+                        height: 20,
+                        color: '#37352F',
+                        strokeWidth: 1.5,
+                      }}
+                    />
                   </div>
-
-                  <div className="space-y-4 w-full">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                        1
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">Tell me what you need</p>
-                        <p className="text-xs text-muted-foreground">
-                          &quot;Book a dentist appointment for next week&quot;
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                        2
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">I plan the calls</p>
-                        <p className="text-xs text-muted-foreground">
-                          I find the right numbers and figure out what to say
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                        3
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold">Calls happen automatically</p>
-                        <p className="text-xs text-muted-foreground">
-                          I make the calls and report back with results
-                        </p>
-                      </div>
-                    </div>
+                  <div>
+                    <h3
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 700,
+                        color: '#37352F',
+                        margin: 0,
+                      }}
+                    >
+                      How it works
+                    </h3>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        color: '#787774',
+                        margin: 0,
+                      }}
+                    >
+                      3 simple steps
+                    </p>
                   </div>
                 </div>
 
-                {/* Right: capabilities */}
-                <div className="md:w-1/2 w-full">
-                  <div className="rounded-2xl bg-muted/30 border border-border/40 p-5 space-y-3">
-                    <p className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-3">
-                      What I can handle
-                    </p>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 20,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        backgroundColor: '#2383E2',
+                        color: '#FFFFFF',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      1
+                    </div>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: '#37352F',
+                          margin: 0,
+                        }}
+                      >
+                        Tell me what you need
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          color: '#787774',
+                          margin: '2px 0 0 0',
+                        }}
+                      >
+                        &quot;Book a dentist appointment for next week&quot;
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        backgroundColor: '#2383E2',
+                        color: '#FFFFFF',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      2
+                    </div>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: '#37352F',
+                          margin: 0,
+                        }}
+                      >
+                        I plan the calls
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          color: '#787774',
+                          margin: '2px 0 0 0',
+                        }}
+                      >
+                        I find the right numbers and figure out what to say
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        backgroundColor: '#2383E2',
+                        color: '#FFFFFF',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      3
+                    </div>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: '#37352F',
+                          margin: 0,
+                        }}
+                      >
+                        Calls happen automatically
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 13,
+                          color: '#787774',
+                          margin: '2px 0 0 0',
+                        }}
+                      >
+                        I make the calls and report back with results
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: capabilities */}
+              <div style={{ flex: '1 1 320px' }}>
+                <div
+                  style={{
+                    backgroundColor: '#F7F6F3',
+                    border: '1px solid #E3E2DE',
+                    borderRadius: 8,
+                    padding: 20,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#787774',
+                      textTransform: 'uppercase' as const,
+                      letterSpacing: '0.06em',
+                      margin: '0 0 16px 0',
+                    }}
+                  >
+                    What I can handle
+                  </p>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 12,
+                    }}
+                  >
                     {[
                       { icon: Phone, text: 'Navigate phone menus and IVR systems' },
                       { icon: Clock, text: 'Wait on hold so you don\'t have to' },
@@ -623,20 +1285,61 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
                       { icon: Sparkles, text: 'Adapt to unexpected situations' },
                       { icon: CheckCircle, text: 'Auto-retry if a line is busy' },
                     ].map((item) => (
-                      <div key={item.text} className="flex items-center gap-2.5">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10">
-                          <item.icon className="h-3 w-3 text-primary" />
+                      <div
+                        key={item.text}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 24,
+                            height: 24,
+                            borderRadius: 6,
+                            backgroundColor: '#FFFFFF',
+                          }}
+                        >
+                          <item.icon
+                            style={{
+                              width: 14,
+                              height: 14,
+                              color: '#787774',
+                              strokeWidth: 1.5,
+                            }}
+                          />
                         </div>
-                        <span className="text-sm text-muted-foreground">{item.text}</span>
+                        <span
+                          style={{ fontSize: 13, color: '#37352F' }}
+                        >
+                          {item.text}
+                        </span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Spin animation keyframes */}
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @media (max-width: 768px) {
+          div[style*="grid-template-columns: repeat(4"] {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

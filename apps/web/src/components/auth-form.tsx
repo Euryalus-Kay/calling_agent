@@ -4,9 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle } from 'lucide-react';
 
 interface AuthFormProps {
@@ -96,47 +93,62 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md border-border/50">
-          <CardContent className="pt-12 pb-12 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10">
-              <CheckCircle className="h-8 w-8 text-emerald-500" />
-            </div>
-            {needsConfirmation ? (
-              <>
-                <h2 className="text-xl font-semibold mb-2">Check your email</h2>
-                <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-                  We sent a confirmation link to <strong className="text-foreground">{email}</strong>.
-                  Click the link to activate your account, then come back to sign in.
-                </p>
-                <Link
-                  href="/login"
-                  className="inline-block mt-6 text-sm font-medium text-primary hover:underline underline-offset-4"
-                >
-                  Go to sign in
-                </Link>
-              </>
-            ) : (
-              <>
-                <h2 className="text-xl font-semibold mb-2">Account created!</h2>
-                <p className="text-muted-foreground text-sm">
-                  Setting up your account...
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ backgroundColor: '#FFFFFF' }}>
+        <div
+          className="w-full max-w-md rounded-lg px-8 py-12 text-center"
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E3E2DE',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+          }}
+        >
+          <div
+            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+            style={{ backgroundColor: 'rgba(77, 171, 154, 0.1)' }}
+          >
+            <CheckCircle className="h-8 w-8" style={{ color: '#4DAB9A' }} />
+          </div>
+          {needsConfirmation ? (
+            <>
+              <h2 className="text-xl font-semibold mb-2" style={{ color: '#37352F' }}>
+                Check your email
+              </h2>
+              <p className="text-sm max-w-xs mx-auto" style={{ color: '#787774' }}>
+                We sent a confirmation link to{' '}
+                <strong style={{ color: '#37352F' }}>{email}</strong>.
+                Click the link to activate your account, then come back to sign in.
+              </p>
+              <Link
+                href="/login"
+                className="inline-block mt-6 text-sm font-medium hover:underline underline-offset-4"
+                style={{ color: '#2383E2' }}
+              >
+                Go to sign in
+              </Link>
+            </>
+          ) : (
+            <>
+              <h2 className="text-xl font-semibold mb-2" style={{ color: '#37352F' }}>
+                Account created!
+              </h2>
+              <p className="text-sm" style={{ color: '#787774' }}>
+                Setting up your account...
+              </p>
+            </>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#F7F6F3' }}>
       {/* Back to home link */}
       <div className="p-6">
         <Link
           href="/welcome"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+          style={{ color: '#787774' }}
         >
           <ArrowLeft className="h-4 w-4" />
           Back to home
@@ -144,25 +156,44 @@ export function AuthForm({ mode }: AuthFormProps) {
       </div>
 
       <div className="flex-1 flex items-center justify-center p-4 -mt-16">
-        <Card className="w-full max-w-md border-border/50">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary">
-              <Phone className="h-5 w-5 text-primary-foreground" />
+        <div
+          className="w-full max-w-md rounded-lg"
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E3E2DE',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+          }}
+        >
+          {/* Header */}
+          <div className="text-center px-8 pt-8 pb-2">
+            <div
+              className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg"
+              style={{ backgroundColor: '#2383E2' }}
+            >
+              <Phone className="h-5 w-5 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold" style={{ color: '#37352F' }}>
               {mode === 'login' ? 'Welcome back' : 'Create your account'}
-            </CardTitle>
-            <CardDescription className="text-base">
+            </h1>
+            <p className="text-base mt-2" style={{ color: '#787774' }}>
               {mode === 'login'
                 ? 'Sign in to manage your AI phone calls'
                 : 'Start making AI-powered phone calls in minutes'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
+            </p>
+          </div>
+
+          {/* Content */}
+          <div className="px-8 pt-4 pb-8">
             {/* Google OAuth button first */}
-            <Button
-              variant="outline"
-              className="w-full h-11 font-medium"
+            <button
+              type="button"
+              className="w-full h-11 rounded-lg text-sm font-medium inline-flex items-center justify-center transition-colors hover:opacity-90"
+              style={{
+                backgroundColor: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                color: '#37352F',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+              }}
               onClick={handleGoogleLogin}
             >
               <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
@@ -184,56 +215,84 @@ export function AuthForm({ mode }: AuthFormProps) {
                 />
               </svg>
               Continue with Google
-            </Button>
+            </button>
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border/60" />
+                <div className="w-full" style={{ borderTop: '1px solid #E3E2DE' }} />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-3 text-muted-foreground/70">or continue with email</span>
+                <span className="px-3" style={{ backgroundColor: '#FFFFFF', color: '#787774' }}>
+                  or continue with email
+                </span>
               </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {mode === 'signup' && (
                 <div className="space-y-1.5">
-                  <label htmlFor="fullName" className="text-sm font-medium">
+                  <label htmlFor="fullName" className="text-sm font-medium" style={{ color: '#37352F' }}>
                     Full name
                   </label>
-                  <Input
+                  <input
                     id="fullName"
                     type="text"
                     placeholder="John Doe"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
-                    className="h-11"
+                    className="w-full h-11 rounded-lg px-3 text-sm outline-none transition-shadow placeholder:opacity-50"
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E3E2DE',
+                      color: '#37352F',
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#2383E2';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(35,131,226,0.15)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#E3E2DE';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   />
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label htmlFor="email" className="text-sm font-medium">
+                <label htmlFor="email" className="text-sm font-medium" style={{ color: '#37352F' }}>
                   Email address
                 </label>
-                <Input
+                <input
                   id="email"
                   type="email"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-11"
+                  className="w-full h-11 rounded-lg px-3 text-sm outline-none transition-shadow placeholder:opacity-50"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #E3E2DE',
+                    color: '#37352F',
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#2383E2';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(35,131,226,0.15)';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#E3E2DE';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label htmlFor="password" className="text-sm font-medium">
+                <label htmlFor="password" className="text-sm font-medium" style={{ color: '#37352F' }}>
                   Password
                 </label>
                 <div className="relative">
-                  <Input
+                  <input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     placeholder={mode === 'signup' ? 'Min. 6 characters' : 'Enter your password'}
@@ -241,12 +300,26 @@ export function AuthForm({ mode }: AuthFormProps) {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="h-11 pr-10"
+                    className="w-full h-11 rounded-lg px-3 pr-10 text-sm outline-none transition-shadow placeholder:opacity-50"
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E3E2DE',
+                      color: '#37352F',
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#2383E2';
+                      e.currentTarget.style.boxShadow = '0 0 0 3px rgba(35,131,226,0.15)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#E3E2DE';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: '#787774' }}
                     tabIndex={-1}
                   >
                     {showPassword ? (
@@ -259,12 +332,23 @@ export function AuthForm({ mode }: AuthFormProps) {
               </div>
 
               {error && (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
-                  <p className="text-sm text-destructive">{error}</p>
+                <div
+                  className="rounded-lg px-4 py-3"
+                  style={{
+                    backgroundColor: 'rgba(235, 87, 87, 0.06)',
+                    border: '1px solid rgba(235, 87, 87, 0.25)',
+                  }}
+                >
+                  <p className="text-sm" style={{ color: '#EB5757' }}>{error}</p>
                 </div>
               )}
 
-              <Button type="submit" className="w-full h-11 font-semibold" disabled={loading}>
+              <button
+                type="submit"
+                className="w-full h-11 rounded-lg text-sm font-semibold text-white inline-flex items-center justify-center transition-opacity disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                style={{ backgroundColor: '#2383E2' }}
+                disabled={loading}
+              >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -273,28 +357,36 @@ export function AuthForm({ mode }: AuthFormProps) {
                 ) : (
                   mode === 'login' ? 'Sign in' : 'Create account'
                 )}
-              </Button>
+              </button>
             </form>
 
-            <p className="mt-6 text-center text-sm text-muted-foreground">
+            <p className="mt-6 text-center text-sm" style={{ color: '#787774' }}>
               {mode === 'login' ? (
                 <>
                   Don&apos;t have an account?{' '}
-                  <Link href="/signup" className="font-medium text-primary hover:underline underline-offset-4">
+                  <Link
+                    href="/signup"
+                    className="font-medium hover:underline underline-offset-4"
+                    style={{ color: '#2383E2' }}
+                  >
                     Sign up for free
                   </Link>
                 </>
               ) : (
                 <>
                   Already have an account?{' '}
-                  <Link href="/login" className="font-medium text-primary hover:underline underline-offset-4">
+                  <Link
+                    href="/login"
+                    className="font-medium hover:underline underline-offset-4"
+                    style={{ color: '#2383E2' }}
+                  >
                     Sign in
                   </Link>
                 </>
               )}
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

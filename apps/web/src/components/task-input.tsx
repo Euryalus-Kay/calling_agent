@@ -2,9 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Send, Sparkles } from 'lucide-react';
 
 const EXAMPLES = [
@@ -41,57 +38,100 @@ export function TaskInput() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 pt-12 md:pt-24">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">What can I help you with?</h1>
-        <p className="text-muted-foreground">
+    <div style={{ maxWidth: 672, margin: '0 auto', padding: '48px 16px 0' }}>
+      <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <h1 style={{ fontSize: 30, fontWeight: 700, color: '#37352F', marginBottom: 8 }}>What can I help you with?</h1>
+        <p style={{ fontSize: 16, color: '#787774' }}>
           Describe what you need and I&apos;ll make the calls for you
         </p>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="relative">
-          <Textarea
+        <div style={{ position: 'relative' }}>
+          <textarea
             placeholder="e.g., Find me a plumber in Austin who can come tomorrow afternoon..."
             value={taskText}
             onChange={(e) => setTaskText(e.target.value)}
-            className="min-h-[120px] pr-14 text-base resize-none"
+            style={{
+              width: '100%',
+              minHeight: 120,
+              padding: '12px 56px 12px 16px',
+              fontSize: 16,
+              color: '#37352F',
+              background: '#FFFFFF',
+              border: '1px solid #E3E2DE',
+              borderRadius: 8,
+              outline: 'none',
+              resize: 'none',
+              boxSizing: 'border-box',
+              fontFamily: 'inherit',
+              lineHeight: 1.5,
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = '#2383E2';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(35,131,226,0.15)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = '#E3E2DE';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                 handleSubmit(e);
               }
             }}
           />
-          <Button
+          <button
             type="submit"
-            size="icon"
             disabled={!taskText.trim() || loading}
-            className="absolute bottom-3 right-3"
+            style={{
+              position: 'absolute',
+              bottom: 12,
+              right: 12,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: 36,
+              width: 36,
+              background: !taskText.trim() || loading ? '#E3E2DE' : '#2383E2',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: 8,
+              cursor: !taskText.trim() || loading ? 'not-allowed' : 'pointer',
+              transition: 'background 120ms ease',
+            }}
           >
-            <Send className="h-4 w-4" />
-          </Button>
+            <Send style={{ height: 16, width: 16 }} />
+          </button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2 text-right">
+        <p style={{ fontSize: 12, color: '#787774', marginTop: 8, textAlign: 'right' }}>
           Cmd+Enter to submit
         </p>
       </form>
 
-      <div className="mt-8">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Try these</span>
+      <div style={{ marginTop: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Sparkles style={{ height: 16, width: 16, color: '#787774' }} />
+          <span style={{ fontSize: 14, color: '#787774' }}>Try these</span>
         </div>
-        <div className="grid gap-2">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {EXAMPLES.map((example) => (
-            <Card
+            <div
               key={example}
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => setTaskText(example)}
+              style={{
+                padding: 12,
+                background: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 8,
+                cursor: 'pointer',
+                transition: 'background 120ms ease',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#F7F6F3'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
             >
-              <CardContent className="p-3">
-                <p className="text-sm">{example}</p>
-              </CardContent>
-            </Card>
+              <p style={{ fontSize: 14, color: '#37352F', margin: 0 }}>{example}</p>
+            </div>
           ))}
         </div>
       </div>
