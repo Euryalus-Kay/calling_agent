@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import type { CallPlan } from '@/types';
 
 const WORKER_BASE_URL = process.env.WORKER_BASE_URL || 'http://localhost:8080';
 
+function getAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
+
 export async function POST(request: Request) {
   try {
+    // Use session client for auth check
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },
@@ -22,29 +31,35 @@ export async function POST(request: Request) {
 
     const { taskId } = body;
 
-    // Fetch the task
-    const { data: task } = await supabase
+    // Use admin client for all DB ops (bypasses RLS - calls table has no INSERT policy)
+    const admin = getAdminClient();
+
+    // Fetch the task (verify ownership via user_id filter)
+    const { data: task, error: taskError } = await admin
       .from('tasks')
       .select('*')
       .eq('id', taskId)
       .eq('user_id', user.id)
       .single();
 
-    if (!task) {
+    if (taskError || !task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    if (task.status !== 'ready') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const taskRow = task as Record<string, any>;
+
+    if (taskRow.status !== 'ready') {
       return NextResponse.json({ error: 'Task is not ready to start calls yet.' }, { status: 400 });
     }
 
-    const plan = task.plan as CallPlan;
+    const plan = taskRow.plan as CallPlan;
     if (!plan?.calls?.length) {
       return NextResponse.json({ error: 'No calls in the plan.' }, { status: 400 });
     }
 
     // Check concurrent call limit (max 5 active)
-    const { count } = await supabase
+    const { count } = await admin
       .from('calls')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
@@ -58,16 +73,17 @@ export async function POST(request: Request) {
     }
 
     // Fetch user profile for call context
-    const { data: profile } = await supabase
+    const { data: profile } = await admin
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single();
 
     // Create call records and enqueue via worker HTTP endpoint
-    const callRecords = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const callRecords: Record<string, any>[] = [];
     for (const planned of plan.calls) {
-      const { data: call, error: callError } = await supabase
+      const { data: call, error: callError } = await admin
         .from('calls')
         .insert({
           task_id: taskId,
@@ -78,7 +94,7 @@ export async function POST(request: Request) {
           status: 'queued',
           retry_count: 0,
           max_retries: 2,
-        })
+        } as never)
         .select()
         .single();
 
@@ -87,7 +103,9 @@ export async function POST(request: Request) {
         continue;
       }
 
-      callRecords.push(call);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const callRow = call as Record<string, any>;
+      callRecords.push(callRow);
 
       // Enqueue via worker HTTP endpoint instead of direct BullMQ
       const enqueueRes = await fetch(`${WORKER_BASE_URL}/enqueue-call`, {
@@ -97,7 +115,7 @@ export async function POST(request: Request) {
           Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({
-          callId: call.id,
+          callId: callRow.id,
           taskId,
           userId: user.id,
           businessName: planned.business_name,
@@ -122,16 +140,15 @@ export async function POST(request: Request) {
     }
 
     // Update task status
-    await supabase
+    await admin
       .from('tasks')
-      .update({ status: 'in_progress' })
+      .update({ status: 'in_progress' } as never)
       .eq('id', taskId);
 
     return NextResponse.json({ calls: callRecords });
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    const errorStack = err instanceof Error ? err.stack : '';
-    console.error('Unexpected error in POST /api/calls/initiate:', errorMessage, errorStack);
+    console.error('Unexpected error in POST /api/calls/initiate:', errorMessage);
     return NextResponse.json(
       { error: `Something went wrong: ${errorMessage}` },
       { status: 500 }
