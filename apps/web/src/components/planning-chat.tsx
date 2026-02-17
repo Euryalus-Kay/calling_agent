@@ -768,8 +768,14 @@ export function PlanningChat({
 
       if (res.ok) {
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        console.error('Call initiate failed:', res.status, data);
+        alert(`Failed to start calls: ${data.error || res.statusText}`);
+        setInitiating(false);
       }
-    } catch {
+    } catch (err) {
+      console.error('Call initiate error:', err);
       setInitiating(false);
     }
   }

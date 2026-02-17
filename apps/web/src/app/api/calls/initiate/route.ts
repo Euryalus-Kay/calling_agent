@@ -129,9 +129,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ calls: callRecords });
   } catch (err) {
-    console.error('Unexpected error in POST /api/calls/initiate:', err);
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const errorStack = err instanceof Error ? err.stack : '';
+    console.error('Unexpected error in POST /api/calls/initiate:', errorMessage, errorStack);
     return NextResponse.json(
-      { error: 'Something went wrong starting the calls. Please try again.' },
+      { error: `Something went wrong: ${errorMessage}` },
       { status: 500 }
     );
   }
