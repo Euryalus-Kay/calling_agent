@@ -12,8 +12,8 @@ export default async function DashboardPage() {
   if (!user) redirect('/login');
 
   // Fetch data in parallel
-  const [profileRes, tasksRes, callStatsRes] = await Promise.all([
-    supabase.from('profiles').select('full_name').eq('id', user.id).single(),
+  const [profileRes, tasksRes, callStatsRes, memoryCountRes, contactCountRes] = await Promise.all([
+    supabase.from('profiles').select('full_name, phone_number, verified_caller_id').eq('id', user.id).single(),
     supabase
       .from('tasks')
       .select('*')
@@ -23,6 +23,14 @@ export default async function DashboardPage() {
     supabase
       .from('calls')
       .select('status, duration_seconds')
+      .eq('user_id', user.id),
+    supabase
+      .from('user_memory')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+    supabase
+      .from('contacts')
+      .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id),
   ]);
 
@@ -53,6 +61,12 @@ export default async function DashboardPage() {
       userName={profileRes.data?.full_name || 'there'}
       recentTasks={recentTasks}
       stats={stats}
+      nudgeData={{
+        hasPhoneNumber: !!profileRes.data?.phone_number,
+        hasVerifiedCallerId: !!profileRes.data?.verified_caller_id,
+        memoryCount: memoryCountRes.count || 0,
+        contactCount: contactCountRes.count || 0,
+      }}
     />
   );
 }

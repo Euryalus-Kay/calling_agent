@@ -37,8 +37,6 @@ export function ProfileForm({ profile }: { profile: UserProfile }) {
     city: profile.city || '',
     state: profile.state || '',
     zip_code: profile.zip_code || '',
-    insurance_provider: profile.insurance_provider || '',
-    insurance_member_id: profile.insurance_member_id || '',
   });
   const [saving, setSaving] = useState(false);
   const [verifiedCallerId, setVerifiedCallerId] = useState<string | null>(
@@ -133,132 +131,22 @@ export function ProfileForm({ profile }: { profile: UserProfile }) {
 
   return (
     <div style={{ maxWidth: 672, margin: '0 auto', padding: 24 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#37352F', marginBottom: 24 }}>Profile</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#37352F', marginBottom: 24 }}>Settings</h1>
 
+      {/* Caller ID Section — most prominent */}
       <div style={{
         background: '#FFFFFF',
         border: '1px solid #E3E2DE',
         borderRadius: 8,
         boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-      }}>
-        <div style={{ padding: '20px 20px 8px' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Personal Information</h2>
-        </div>
-        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <input
-            placeholder="Full name"
-            value={formData.full_name}
-            onChange={(e) => updateField('full_name', e.target.value)}
-            style={inputStyle}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-          />
-          <input
-            placeholder="Phone number"
-            type="tel"
-            value={formData.phone_number}
-            onChange={(e) => updateField('phone_number', e.target.value)}
-            style={inputStyle}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-          />
-
-          <div style={{ height: 1, background: '#E3E2DE' }} />
-
-          <input
-            placeholder="Street address"
-            value={formData.address}
-            onChange={(e) => updateField('address', e.target.value)}
-            style={inputStyle}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-          />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-            <input
-              placeholder="City"
-              value={formData.city}
-              onChange={(e) => updateField('city', e.target.value)}
-              style={inputStyle}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-            />
-            <input
-              placeholder="State"
-              value={formData.state}
-              onChange={(e) => updateField('state', e.target.value)}
-              style={inputStyle}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-            />
-            <input
-              placeholder="ZIP"
-              value={formData.zip_code}
-              onChange={(e) => updateField('zip_code', e.target.value)}
-              style={inputStyle}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-            />
-          </div>
-
-          <div style={{ height: 1, background: '#E3E2DE' }} />
-
-          <input
-            placeholder="Insurance provider"
-            value={formData.insurance_provider}
-            onChange={(e) => updateField('insurance_provider', e.target.value)}
-            style={inputStyle}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-          />
-          <input
-            placeholder="Insurance member ID"
-            value={formData.insurance_member_id}
-            onChange={(e) =>
-              updateField('insurance_member_id', e.target.value)
-            }
-            style={inputStyle}
-            onFocus={handleFocus}
-            onBlur={handleBlur}
-          />
-
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              alignSelf: 'flex-start',
-              display: 'inline-flex',
-              alignItems: 'center',
-              padding: '6px 14px',
-              fontSize: 14,
-              fontWeight: 500,
-              color: '#FFFFFF',
-              background: '#2383E2',
-              border: 'none',
-              borderRadius: 8,
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.6 : 1,
-            }}
-          >
-            {saving ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </div>
-
-      {/* Caller ID Section */}
-      <div style={{
-        background: '#FFFFFF',
-        border: '1px solid #E3E2DE',
-        borderRadius: 8,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-        marginTop: 24,
       }}>
         <div style={{ padding: '20px 20px 8px' }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Phone style={{ height: 18, width: 18, color: '#787774' }} />
-            Caller ID
+            <Phone style={{ height: 18, width: 18, color: '#2383E2' }} />
+            Outbound Caller ID
           </h2>
           <p style={{ fontSize: 13, color: '#787774', margin: '6px 0 0' }}>
-            Verify your phone number so outbound calls show your number instead of ours
+            Verify your phone number so people see your real number when we call on your behalf
           </p>
         </div>
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -366,6 +254,96 @@ export function ProfileForm({ profile }: { profile: UserProfile }) {
               </button>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Personal Information */}
+      <div style={{
+        background: '#FFFFFF',
+        border: '1px solid #E3E2DE',
+        borderRadius: 8,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+        marginTop: 24,
+      }}>
+        <div style={{ padding: '20px 20px 8px' }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Personal Information</h2>
+        </div>
+        <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <input
+            placeholder="Full name"
+            value={formData.full_name}
+            onChange={(e) => updateField('full_name', e.target.value)}
+            style={inputStyle}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+          />
+          <input
+            placeholder="Phone number"
+            type="tel"
+            value={formData.phone_number}
+            onChange={(e) => updateField('phone_number', e.target.value)}
+            style={inputStyle}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+          />
+
+          <div style={{ height: 1, background: '#E3E2DE' }} />
+
+          <input
+            placeholder="Street address"
+            value={formData.address}
+            onChange={(e) => updateField('address', e.target.value)}
+            style={inputStyle}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
+          />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+            <input
+              placeholder="City"
+              value={formData.city}
+              onChange={(e) => updateField('city', e.target.value)}
+              style={inputStyle}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+            />
+            <input
+              placeholder="State"
+              value={formData.state}
+              onChange={(e) => updateField('state', e.target.value)}
+              style={inputStyle}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+            />
+            <input
+              placeholder="ZIP"
+              value={formData.zip_code}
+              onChange={(e) => updateField('zip_code', e.target.value)}
+              style={inputStyle}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
+            />
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              alignSelf: 'flex-start',
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '6px 14px',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#FFFFFF',
+              background: '#2383E2',
+              border: 'none',
+              borderRadius: 8,
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.6 : 1,
+            }}
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
         </div>
       </div>
     </div>

@@ -134,7 +134,7 @@ export function MemoryPage({ memories: initial, userId }: MemoryPageProps) {
     };
 
     const { data, error } = await supabase
-      .from('user_memories')
+      .from('user_memory')
       .insert(payload)
       .select()
       .single();
@@ -157,7 +157,7 @@ export function MemoryPage({ memories: initial, userId }: MemoryPageProps) {
     setMemories((prev) => prev.filter((m) => m.id !== memoryId));
     toast.success('Memory forgotten');
 
-    const { error } = await supabase.from('user_memories').delete().eq('id', memoryId);
+    const { error } = await supabase.from('user_memory').delete().eq('id', memoryId);
     if (error && original) {
       setMemories((prev) => [original, ...prev]);
       toast.error('Failed to delete memory');

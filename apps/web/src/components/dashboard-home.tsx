@@ -27,6 +27,7 @@ import {
   PhoneForwarded,
   MessageCircle,
 } from 'lucide-react';
+import { OnboardingNudge } from './onboarding-nudge';
 import type { Task } from '@/types';
 
 interface DashboardHomeProps {
@@ -37,6 +38,12 @@ interface DashboardHomeProps {
     total_calls: number;
     successful_calls: number;
     total_call_minutes: number;
+  };
+  nudgeData?: {
+    hasPhoneNumber: boolean;
+    hasVerifiedCallerId: boolean;
+    memoryCount: number;
+    contactCount: number;
   };
 }
 
@@ -174,7 +181,7 @@ function AnimatedNumber({ value }: { value: number }) {
   );
 }
 
-export function DashboardHome({ userName, recentTasks, stats }: DashboardHomeProps) {
+export function DashboardHome({ userName, recentTasks, stats, nudgeData }: DashboardHomeProps) {
   const [taskText, setTaskText] = useState('');
   const [loading, setLoading] = useState(false);
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
@@ -242,6 +249,16 @@ export function DashboardHome({ userName, recentTasks, stats }: DashboardHomePro
         padding: '48px 24px',
       }}
     >
+      {/* Onboarding Nudge */}
+      {nudgeData && (
+        <OnboardingNudge
+          hasPhoneNumber={nudgeData.hasPhoneNumber}
+          hasVerifiedCallerId={nudgeData.hasVerifiedCallerId}
+          memoryCount={nudgeData.memoryCount}
+          contactCount={nudgeData.contactCount}
+        />
+      )}
+
       {/* Hero: Greeting + Input */}
       <div style={{ marginBottom: 48 }}>
         <div style={{ marginBottom: 24 }}>

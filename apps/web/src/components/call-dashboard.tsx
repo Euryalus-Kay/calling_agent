@@ -5,7 +5,17 @@ import { useRealtimeCalls } from '@/hooks/use-realtime-calls';
 import { PlanningChat } from './planning-chat';
 import { CallCard } from './call-card';
 import { CallSummary } from './call-summary';
-import { Phone, Clock, CheckCircle, Pause } from 'lucide-react';
+import {
+  Phone,
+  Clock,
+  CheckCircle,
+  Pause,
+  PhoneCall,
+  PhoneOutgoing,
+  Sparkles,
+  Brain,
+  Loader2,
+} from 'lucide-react';
 import type { Task, ChatMessage, CallPlan } from '@/types';
 
 interface CallDashboardProps {
@@ -15,6 +25,59 @@ interface CallDashboardProps {
 
 const DONE_STATUSES = ['completed', 'failed', 'no_answer', 'busy'];
 
+type TaskPhase = 'planning' | 'placing' | 'active' | 'on_hold' | 'wrapping_up' | 'complete';
+
+interface PhaseConfig {
+  label: string;
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+  animate?: boolean;
+}
+
+const PHASE_CONFIGS: Record<TaskPhase, PhaseConfig> = {
+  planning: {
+    label: 'Planning',
+    icon: Brain,
+    color: '#2383E2',
+    bgColor: 'rgba(35, 131, 226, 0.06)',
+  },
+  placing: {
+    label: 'Placing calls',
+    icon: PhoneOutgoing,
+    color: '#D9730D',
+    bgColor: 'rgba(217, 115, 13, 0.06)',
+    animate: true,
+  },
+  active: {
+    label: 'In progress',
+    icon: PhoneCall,
+    color: '#4DAB9A',
+    bgColor: 'rgba(77, 171, 154, 0.06)',
+    animate: true,
+  },
+  on_hold: {
+    label: 'On hold',
+    icon: Pause,
+    color: '#CB912F',
+    bgColor: 'rgba(203, 145, 47, 0.06)',
+    animate: true,
+  },
+  wrapping_up: {
+    label: 'Generating summary',
+    icon: Sparkles,
+    color: '#6940A5',
+    bgColor: 'rgba(105, 64, 165, 0.06)',
+    animate: true,
+  },
+  complete: {
+    label: 'Complete',
+    icon: CheckCircle,
+    color: '#4DAB9A',
+    bgColor: 'rgba(77, 171, 154, 0.06)',
+  },
+};
+
 export function CallDashboard({ taskId, task }: CallDashboardProps) {
   const { calls, loading } = useRealtimeCalls(taskId);
 
@@ -23,10 +86,22 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
     const done = calls.filter((c) => DONE_STATUSES.includes(c.status)).length;
     const active = calls.filter((c) => ['in_progress', 'on_hold', 'navigating_menu', 'transferred', 'voicemail'].includes(c.status)).length;
     const onHold = calls.filter((c) => c.status === 'on_hold').length;
+    const placing = calls.filter((c) => ['queued', 'initiating', 'ringing'].includes(c.status)).length;
     const allDone = total > 0 && done === total;
     const progress = total > 0 ? (done / total) * 100 : 0;
-    return { total, done, active, onHold, allDone, progress };
+    return { total, done, active, onHold, placing, allDone, progress };
   }, [calls]);
+
+  // Determine the current phase
+  const phase: TaskPhase = useMemo(() => {
+    if (task.status === 'planning' || task.status === 'ready') return 'planning';
+    if (stats.allDone && task.summary) return 'complete';
+    if (stats.allDone) return 'wrapping_up';
+    if (stats.onHold > 0) return 'on_hold';
+    if (stats.active > 0) return 'active';
+    if (stats.placing > 0) return 'placing';
+    return 'active';
+  }, [task.status, task.summary, stats]);
 
   // Show planning chat if still in planning phase
   if (task.status === 'planning' || task.status === 'ready') {
@@ -40,9 +115,12 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
     );
   }
 
+  const phaseConfig = PHASE_CONFIGS[phase];
+  const PhaseIcon = phaseConfig.icon;
+
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 16px' }}>
-      {/* Skeleton pulse animation */}
+      {/* Animations */}
       <style>{`
         @keyframes notionPulse {
           0%, 100% { opacity: 1; }
@@ -52,128 +130,122 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
           0% { transform: scale(1); opacity: 0.6; }
           75%, 100% { transform: scale(2); opacity: 0; }
         }
+        @keyframes statusPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
       `}</style>
 
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{
-          fontSize: 20,
-          fontWeight: 700,
-          marginBottom: 4,
-          color: '#37352F',
-          lineHeight: 1.3,
+      {/* Phase status bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '10px 16px',
+        borderRadius: 8,
+        backgroundColor: phaseConfig.bgColor,
+        border: `1px solid ${phaseConfig.color}15`,
+        marginBottom: 20,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 28,
+          height: 28,
+          borderRadius: 6,
+          backgroundColor: `${phaseConfig.color}15`,
         }}>
-          {stats.allDone ? 'Task Complete' : 'Working on it'}
-        </h1>
-        <p style={{
-          fontSize: 14,
-          color: '#787774',
-          marginBottom: 16,
-          lineHeight: 1.5,
-        }}>
-          {task.input_text}
-        </p>
-
-        {/* Progress and live stats */}
-        {calls.length > 0 && !stats.allDone && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {/* Progress bar */}
-              <div style={{
-                flex: 1,
-                height: 6,
-                backgroundColor: '#E3E2DE',
-                borderRadius: 3,
-                overflow: 'hidden',
-              }}>
-                <div style={{
-                  width: `${stats.progress}%`,
-                  height: '100%',
-                  backgroundColor: '#2383E2',
-                  borderRadius: 3,
-                  transition: 'width 0.5s ease',
-                }} />
-              </div>
+          <PhaseIcon
+            style={{
+              width: 15,
+              height: 15,
+              color: phaseConfig.color,
+              ...(phaseConfig.animate && phase === 'wrapping_up'
+                ? { animation: 'spin 2s linear infinite' }
+                : {}),
+            }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: phaseConfig.color,
+            }}>
+              {phaseConfig.label}
+            </span>
+            {phaseConfig.animate && phase !== 'complete' && (
               <span style={{
-                fontSize: 12,
-                color: '#787774',
-                fontVariantNumeric: 'tabular-nums',
-                flexShrink: 0,
-              }}>
-                {stats.done}/{stats.total}
-              </span>
-            </div>
+                display: 'inline-block',
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: phaseConfig.color,
+                animation: 'statusPulse 1.5s ease-in-out infinite',
+              }} />
+            )}
+          </div>
+          <span style={{
+            fontSize: 12,
+            color: '#787774',
+          }}>
+            {phase === 'complete'
+              ? `${stats.done} call${stats.done !== 1 ? 's' : ''} finished`
+              : phase === 'wrapping_up'
+              ? 'Analyzing results...'
+              : `${stats.done} of ${stats.total} calls complete`}
+          </span>
+        </div>
 
-            {/* Live status chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {stats.active > 0 && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(77,171,154,0.06)',
-                  padding: '4px 12px',
-                  fontSize: 12,
-                  color: '#4DAB9A',
-                }}>
-                  <span style={{ position: 'relative', display: 'flex', height: 8, width: 8 }}>
-                    <span style={{
-                      position: 'absolute',
-                      display: 'inline-flex',
-                      height: '100%',
-                      width: '100%',
-                      borderRadius: '50%',
-                      backgroundColor: '#4DAB9A',
-                      opacity: 0.6,
-                      animation: 'notionPing 1s cubic-bezier(0,0,0.2,1) infinite',
-                    }} />
-                    <span style={{
-                      position: 'relative',
-                      display: 'inline-flex',
-                      height: 8,
-                      width: 8,
-                      borderRadius: '50%',
-                      backgroundColor: '#4DAB9A',
-                    }} />
-                  </span>
-                  {stats.active} active call{stats.active !== 1 ? 's' : ''}
-                </div>
-              )}
-              {stats.onHold > 0 && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(203,145,47,0.06)',
-                  padding: '4px 12px',
-                  fontSize: 12,
-                  color: '#CB912F',
-                }}>
-                  <Pause style={{ height: 12, width: 12 }} />
-                  {stats.onHold} on hold
-                </div>
-              )}
-              {stats.done > 0 && stats.done < stats.total && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  borderRadius: 999,
-                  backgroundColor: 'rgba(120,119,116,0.06)',
-                  padding: '4px 12px',
-                  fontSize: 12,
-                  color: '#787774',
-                }}>
-                  <CheckCircle style={{ height: 12, width: 12 }} />
-                  {stats.done} done
-                </div>
-              )}
+        {/* Mini progress */}
+        {!stats.allDone && stats.total > 0 && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <div style={{
+              width: 60,
+              height: 4,
+              backgroundColor: `${phaseConfig.color}20`,
+              borderRadius: 2,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                width: `${stats.progress}%`,
+                height: '100%',
+                backgroundColor: phaseConfig.color,
+                borderRadius: 2,
+                transition: 'width 0.5s ease',
+              }} />
             </div>
+            <span style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: phaseConfig.color,
+              fontVariantNumeric: 'tabular-nums',
+            }}>
+              {Math.round(stats.progress)}%
+            </span>
           </div>
         )}
       </div>
+
+      {/* Task description */}
+      <p style={{
+        fontSize: 14,
+        color: '#787774',
+        marginBottom: 20,
+        lineHeight: 1.5,
+      }}>
+        {task.input_text}
+      </p>
 
       {/* Call cards */}
       {loading ? (
@@ -210,10 +282,15 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
             backgroundColor: '#F7F6F3',
             marginBottom: 16,
           }}>
-            <Phone style={{ height: 20, width: 20, color: '#787774' }} />
+            <Loader2 style={{
+              height: 20,
+              width: 20,
+              color: '#787774',
+              animation: 'spin 1s linear infinite',
+            }} />
           </div>
           <p style={{ fontSize: 14, color: '#787774' }}>
-            Calls are being prepared...
+            Preparing your calls...
           </p>
         </div>
       ) : (

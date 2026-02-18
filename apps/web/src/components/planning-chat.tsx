@@ -269,6 +269,7 @@ function CallCard({
   const priority = call.priority ?? 'medium';
   const config = PRIORITY_CONFIG[priority];
   const isLookup = !call.phone_number || call.phone_number === 'LOOKUP_NEEDED';
+  const isSMS = call.type === 'sms';
 
   const handleCopy = useCallback(async () => {
     if (isLookup) return;
@@ -367,6 +368,24 @@ function CallCard({
                   flexShrink: 0,
                 }}
               >
+                {isSMS && (
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      color: '#6940A5',
+                      backgroundColor: 'rgba(105, 64, 165, 0.06)',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                    }}
+                  >
+                    <MessageSquare style={{ height: 11, width: 11 }} />
+                    SMS
+                  </span>
+                )}
                 {call.expected_duration && (
                   <span
                     style={{
@@ -492,6 +511,24 @@ function CallCard({
                 </div>
               )}
             </div>
+
+            {/* SMS body preview */}
+            {isSMS && call.sms_body && (
+              <div style={{
+                marginTop: 10,
+                padding: 10,
+                borderRadius: 6,
+                backgroundColor: 'rgba(105, 64, 165, 0.04)',
+                border: '1px solid rgba(105, 64, 165, 0.1)',
+              }}>
+                <p style={{ fontSize: 12, color: '#6940A5', fontWeight: 500, margin: '0 0 4px' }}>
+                  Message preview
+                </p>
+                <p style={{ fontSize: 13, color: COLORS.text, margin: 0, lineHeight: 1.5 }}>
+                  {call.sms_body}
+                </p>
+              </div>
+            )}
 
             {/* Expandable questions */}
             {call.questions.length > 0 && (

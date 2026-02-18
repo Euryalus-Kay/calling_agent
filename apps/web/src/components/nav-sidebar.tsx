@@ -29,13 +29,12 @@ interface NavSidebarProps {
 const mainNav = [
   { href: '/', label: 'New Task', icon: Plus, description: 'Start something new' },
   { href: '/history', label: 'History', icon: History, description: 'Past tasks & calls' },
-  { href: '/contacts', label: 'Contacts', icon: Users, description: 'Your phone book' },
+  { href: '/knowledge', label: 'Knowledge', icon: Brain, description: 'Contacts & memory' },
   { href: '/schedule', label: 'Schedule', icon: Calendar, description: 'Upcoming calls' },
   { href: '/templates', label: 'Templates', icon: ClipboardList, description: 'Saved call templates' },
 ];
 
 const secondaryNav = [
-  { href: '/memory', label: 'Memory', icon: Brain, description: 'What I know about you' },
   { href: '/notifications', label: 'Notifications', icon: Bell, description: 'Updates & alerts' },
   { href: '/settings', label: 'Settings', icon: Settings, description: 'Preferences' },
 ];

@@ -50,6 +50,8 @@ export interface PlannedCall {
   context: string;
   priority?: 'high' | 'medium' | 'low';
   expected_duration?: string;
+  type?: 'call' | 'sms';
+  sms_body?: string;
 }
 
 export interface MemoryExtraction {

@@ -107,31 +107,48 @@ export async function POST(request: Request) {
       const callRow = call as Record<string, any>;
       callRecords.push(callRow);
 
-      // Enqueue via worker HTTP endpoint instead of direct BullMQ
+      // Route to SMS or call queue based on type
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const profileRow = profile as Record<string, any> | null;
-      const enqueueRes = await fetch(`${WORKER_BASE_URL}/enqueue-call`, {
+      const isSMS = planned.type === 'sms';
+      const enqueueUrl = isSMS
+        ? `${WORKER_BASE_URL}/enqueue-sms`
+        : `${WORKER_BASE_URL}/enqueue-call`;
+
+      const enqueueBody = isSMS
+        ? {
+            callId: callRow.id,
+            taskId,
+            userId: user.id,
+            businessName: planned.business_name,
+            phoneNumber: planned.phone_number,
+            smsBody: planned.sms_body || planned.purpose,
+            callerIdNumber: profileRow?.verified_caller_id || undefined,
+          }
+        : {
+            callId: callRow.id,
+            taskId,
+            userId: user.id,
+            businessName: planned.business_name,
+            phoneNumber: planned.phone_number,
+            purpose: planned.purpose,
+            questions: planned.questions,
+            context: planned.context,
+            userProfile: profile || {},
+            callerIdNumber: profileRow?.verified_caller_id || undefined,
+          };
+
+      const enqueueRes = await fetch(enqueueUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         },
-        body: JSON.stringify({
-          callId: callRow.id,
-          taskId,
-          userId: user.id,
-          businessName: planned.business_name,
-          phoneNumber: planned.phone_number,
-          purpose: planned.purpose,
-          questions: planned.questions,
-          context: planned.context,
-          userProfile: profile || {},
-          callerIdNumber: profileRow?.verified_caller_id || undefined,
-        }),
+        body: JSON.stringify(enqueueBody),
       });
 
       if (!enqueueRes.ok) {
-        console.error('Failed to enqueue call via worker:', await enqueueRes.text());
+        console.error(`Failed to enqueue ${isSMS ? 'SMS' : 'call'} via worker:`, await enqueueRes.text());
       }
     }
 
