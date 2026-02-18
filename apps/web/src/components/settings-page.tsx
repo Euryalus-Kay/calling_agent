@@ -171,21 +171,30 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
   }
 
   async function startVerification() {
-    if (!verifyPhone) {
-      toast.error('Enter a phone number to verify');
+    const numberToVerify = phoneNumber.trim();
+    if (!numberToVerify) {
+      toast.error('Enter a phone number first');
       return;
     }
+    setVerifyPhone(numberToVerify);
     setVerifying(true);
     try {
       const res = await fetch('/api/caller-id', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: verifyPhone }),
+        body: JSON.stringify({ phoneNumber: numberToVerify }),
       });
       const data = await res.json();
       if (res.ok) {
-        setVerifyCode(data.validationCode);
-        toast.success(`Twilio is calling you now. Your code is: ${data.validationCode}`);
+        if (data.alreadyVerified) {
+          // Number was already verified in Twilio — saved directly
+          setVerifiedCallerId(numberToVerify);
+          setVerifyCode(null);
+          toast.success('This number is already verified! Calls will show your number.');
+        } else {
+          setVerifyCode(data.validationCode);
+          toast.success(`Twilio is calling you now. Your code is: ${data.validationCode}`);
+        }
       } else {
         toast.error(data.error || 'Verification failed');
       }
@@ -286,135 +295,6 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
       {/* ---- GENERAL TAB ---- */}
       {activeTab === 'general' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          {/* Caller ID — most prominent */}
-          <div style={{
-            background: '#FFFFFF',
-            border: '1px solid #E3E2DE',
-            borderRadius: 8,
-            boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-            overflow: 'hidden',
-          }}>
-            <div style={{ padding: '16px 20px' }}>
-              <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>
-                <Phone style={{ height: 18, width: 18, color: '#2383E2', flexShrink: 0 }} />
-                Your Phone Number
-              </h2>
-              <p style={{ fontSize: 12, color: '#787774', marginTop: 4, margin: '4px 0 0' }}>
-                Verify your number so calls show your real caller ID. People you call can call you back directly on this number.
-              </p>
-            </div>
-            <div style={{ height: 1, background: '#E3E2DE' }} />
-            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {verifiedCallerId ? (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  backgroundColor: 'rgba(77,171,154,0.06)',
-                  border: '1px solid rgba(77,171,154,0.2)',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <CheckCircle style={{ height: 16, width: 16, color: '#4DAB9A' }} />
-                    <span style={{ fontSize: 14, color: '#37352F', fontWeight: 500 }}>{verifiedCallerId}</span>
-                    <span style={{ fontSize: 12, color: '#4DAB9A' }}>Verified</span>
-                  </div>
-                  <button
-                    onClick={removeCallerId}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '4px 10px',
-                      fontSize: 12,
-                      color: '#EB5757',
-                      background: 'transparent',
-                      border: '1px solid rgba(235,87,87,0.3)',
-                      borderRadius: 6,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <XCircle style={{ height: 12, width: 12 }} />
-                    Remove
-                  </button>
-                </div>
-              ) : verifyCode ? (
-                <div style={{
-                  padding: '16px',
-                  borderRadius: 8,
-                  backgroundColor: 'rgba(35,131,226,0.04)',
-                  border: '1px solid rgba(35,131,226,0.15)',
-                }}>
-                  <p style={{ fontSize: 14, color: '#37352F', margin: '0 0 6px', fontWeight: 500 }}>
-                    Twilio is calling {verifyPhone} now
-                  </p>
-                  <p style={{ fontSize: 13, color: '#787774', margin: '0 0 14px', lineHeight: 1.5 }}>
-                    When you answer, enter this code:
-                  </p>
-                  <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: 6, color: '#2383E2', marginBottom: 14, fontFamily: 'monospace' }}>
-                    {verifyCode}
-                  </div>
-                  <button
-                    onClick={confirmVerification}
-                    disabled={confirming}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 14px',
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: '#FFFFFF',
-                      background: '#4DAB9A',
-                      border: 'none',
-                      borderRadius: 8,
-                      cursor: confirming ? 'not-allowed' : 'pointer',
-                      opacity: confirming ? 0.6 : 1,
-                    }}
-                  >
-                    {confirming && <Loader2 style={{ height: 14, width: 14 }} className="animate-spin" />}
-                    {confirming ? 'Checking...' : "I've entered the code"}
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input
-                    placeholder="+1 (555) 123-4567"
-                    type="tel"
-                    value={verifyPhone}
-                    onChange={(e) => setVerifyPhone(e.target.value)}
-                    style={{ ...inputStyle, flex: 1 }}
-                    onFocus={handleFocus}
-                    onBlur={handleBlur}
-                  />
-                  <button
-                    onClick={startVerification}
-                    disabled={verifying}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      padding: '6px 14px',
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: '#FFFFFF',
-                      background: '#2383E2',
-                      border: 'none',
-                      borderRadius: 8,
-                      cursor: verifying ? 'not-allowed' : 'pointer',
-                      opacity: verifying ? 0.6 : 1,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {verifying && <Loader2 style={{ height: 14, width: 14 }} className="animate-spin" />}
-                    {verifying ? 'Calling...' : 'Verify Number'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
           <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px' }}>
               <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Personal Information</h2>
@@ -436,7 +316,12 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
                 />
               </div>
               <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Phone Number</label>
+                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Phone style={{ height: 13, width: 13, color: '#2383E2' }} />
+                    Phone Number
+                  </div>
+                </label>
                 <input
                   placeholder="+1 (555) 123-4567"
                   type="tel"
@@ -446,9 +331,127 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                 />
-                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
-                  Used as your callback number during calls.
-                </p>
+
+                {/* Caller ID verification — inline below the phone number */}
+                {verifyCode ? (
+                  <div style={{
+                    padding: '14px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(35,131,226,0.04)',
+                    border: '1px solid rgba(35,131,226,0.15)',
+                    marginTop: 8,
+                  }}>
+                    <p style={{ fontSize: 13, color: '#37352F', margin: '0 0 4px', fontWeight: 500 }}>
+                      Twilio is calling {verifyPhone} now
+                    </p>
+                    <p style={{ fontSize: 12, color: '#787774', margin: '0 0 12px', lineHeight: 1.5 }}>
+                      When you answer, enter this code:
+                    </p>
+                    <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: 6, color: '#2383E2', marginBottom: 12, fontFamily: 'monospace' }}>
+                      {verifyCode}
+                    </div>
+                    <button
+                      onClick={confirmVerification}
+                      disabled={confirming}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#FFFFFF',
+                        background: '#4DAB9A',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: confirming ? 'not-allowed' : 'pointer',
+                        opacity: confirming ? 0.6 : 1,
+                      }}
+                    >
+                      {confirming && <Loader2 style={{ height: 14, width: 14 }} className="animate-spin" />}
+                      {confirming ? 'Checking...' : "I've entered the code"}
+                    </button>
+                  </div>
+                ) : verifiedCallerId && verifiedCallerId === phoneNumber ? (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '8px 12px',
+                    borderRadius: 6,
+                    backgroundColor: 'rgba(77,171,154,0.06)',
+                    border: '1px solid rgba(77,171,154,0.2)',
+                    marginTop: 8,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle style={{ height: 14, width: 14, color: '#4DAB9A' }} />
+                      <span style={{ fontSize: 12, color: '#4DAB9A', fontWeight: 500 }}>Verified — calls will show your number</span>
+                    </div>
+                    <button
+                      onClick={removeCallerId}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        padding: '2px 8px',
+                        fontSize: 11,
+                        color: '#EB5757',
+                        background: 'transparent',
+                        border: '1px solid rgba(235,87,87,0.3)',
+                        borderRadius: 4,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <XCircle style={{ height: 10, width: 10 }} />
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 8 }}>
+                    {verifiedCallerId && verifiedCallerId !== phoneNumber ? (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '8px 12px',
+                        borderRadius: 6,
+                        backgroundColor: 'rgba(217,115,13,0.06)',
+                        border: '1px solid rgba(217,115,13,0.2)',
+                        marginBottom: 8,
+                      }}>
+                        <AlertTriangle style={{ height: 13, width: 13, color: '#D9730D', flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: '#D9730D' }}>
+                          Your verified number ({verifiedCallerId}) doesn't match. Verify this number to use it as caller ID.
+                        </span>
+                      </div>
+                    ) : null}
+                    <p style={{ fontSize: 12, color: '#787774', margin: '0 0 8px' }}>
+                      Verify this number so outgoing calls show your real caller ID.
+                    </p>
+                    <button
+                      onClick={startVerification}
+                      disabled={verifying || !phoneNumber.trim()}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '5px 12px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#FFFFFF',
+                        background: '#2383E2',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: verifying || !phoneNumber.trim() ? 'not-allowed' : 'pointer',
+                        opacity: verifying || !phoneNumber.trim() ? 0.5 : 1,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {verifying && <Loader2 style={{ height: 13, width: 13 }} className="animate-spin" />}
+                      {verifying ? 'Calling...' : 'Verify Number'}
+                    </button>
+                  </div>
+                )}
               </div>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Email</label>

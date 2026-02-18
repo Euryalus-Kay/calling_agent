@@ -24,6 +24,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
     }
 
+    // First check if this number is already verified with Twilio
+    try {
+      const existing = await twilioClient.outgoingCallerIds.list({
+        phoneNumber,
+        limit: 1,
+      });
+
+      if (existing.length > 0) {
+        // Number is already verified in Twilio — save it directly to profile
+        const admin = createSupabaseAdminClient();
+        await admin
+          .from('profiles')
+          .update({ verified_caller_id: phoneNumber } as never)
+          .eq('id', user.id);
+
+        return NextResponse.json({
+          alreadyVerified: true,
+          phoneNumber,
+        });
+      }
+    } catch {
+      // If the check fails, just proceed with normal verification
+    }
+
     // Start verification — Twilio will call the number with a code
     const validation = await twilioClient.validationRequests.create({
       phoneNumber,
