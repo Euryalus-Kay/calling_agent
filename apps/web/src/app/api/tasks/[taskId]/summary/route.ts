@@ -115,10 +115,44 @@ ${call.duration_seconds ? `Duration: ${Math.floor(call.duration_seconds / 60)}m 
       })
       .join('\n\n---\n\n');
 
+    // Web search for business context (non-blocking, enriches summary with addresses/links)
+    let webContext = '';
+    try {
+      const braveKey = process.env.BRAVE_SEARCH_API_KEY;
+      if (braveKey) {
+        const uniqueBusinesses = [...new Set(calls.map((c) => c.business_name).filter(Boolean))];
+        const searchResults = await Promise.allSettled(
+          uniqueBusinesses.slice(0, 3).map(async (biz: string) => {
+            const query = `${biz} address hours website`;
+            const res = await fetch(
+              `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=3`,
+              { headers: { 'X-Subscription-Token': braveKey, Accept: 'application/json' } }
+            );
+            if (!res.ok) return null;
+            const data = await res.json();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const snippets = (data.web?.results || []).slice(0, 3).map((r: any) =>
+              `${r.title}: ${r.description}${r.url ? ` (${r.url})` : ''}`
+            );
+            return snippets.length > 0 ? `${biz}:\n${snippets.join('\n')}` : null;
+          })
+        );
+        const validResults = searchResults
+          .filter((r): r is PromiseFulfilledResult<string | null> => r.status === 'fulfilled' && !!r.value)
+          .map((r) => r.value);
+        if (validResults.length > 0) {
+          webContext = `WEB SEARCH CONTEXT (use to enrich summary with addresses, links, hours, etc.):\n${validResults.join('\n\n')}`;
+        }
+      }
+    } catch (err) {
+      console.log('[Summary] Web search failed (non-critical):', err);
+    }
+
     const systemPrompt = SUMMARY_SYSTEM_PROMPT
       .replace('{{ORIGINAL_REQUEST}}', task.input_text)
       .replace('{{CALL_RESULTS}}', callResults)
-      .replace('{{TRANSCRIPT_DATA}}', transcriptData);
+      .replace('{{TRANSCRIPT_DATA}}', transcriptData)
+      .replace('{{WEB_CONTEXT}}', webContext);
 
     // Generate summary with Claude Opus 4
     let summary: string;
@@ -130,7 +164,7 @@ ${call.duration_seconds ? `Duration: ${Math.floor(call.duration_seconds / 60)}m 
         messages: [
           {
             role: 'user',
-            content: 'Synthesize a thorough, conversational summary of everything that happened and was learned from these calls. Include all specific details.',
+            content: 'Synthesize a thorough, conversational summary of everything that happened and was learned from these calls. Include all specific details. If web search context is available, weave in useful details like addresses and links naturally.',
           },
         ],
       });

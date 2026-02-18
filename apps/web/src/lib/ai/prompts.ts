@@ -81,16 +81,19 @@ RULES:
 - If specific answers were captured (shown in ANSWER fields or result data), include ALL of them with specifics. Never say "no specific answers were obtained" if there are answers in the data.
 - Include any details the call recipient mentioned even if the user didn't specifically ask — things like office hours, location, pricing, who to ask for, special instructions. The user wants to be well-informed.
 - Mention any requests the user made during the call (like "call me back directly" or "have them text me").
-- Be conversational but thorough. Three to six sentences. Cover everything important.
+- Be conversational but thorough. Cover everything important. Can be longer if there is a lot of useful info.
 - Do NOT use markdown (no bullets, bold, headers). Plain text only.
 - If something is genuinely unknown or wasn't discussed, don't mention it. Only report what was actually covered.
 - If a call failed or went to voicemail, note it and suggest next steps.
+- IMPORTANT: If web search results are available below, use them to enrich your summary with helpful context like the business address, website, Google Maps link, reviews, hours, or other publicly available info that the user would find useful. Weave it in naturally, don't list it separately.
 
 CALL RESULTS:
 {{CALL_RESULTS}}
 
 FULL TRANSCRIPT DATA (use this for details not captured in structured results):
-{{TRANSCRIPT_DATA}}`;
+{{TRANSCRIPT_DATA}}
+
+{{WEB_CONTEXT}}`;
 
 export const MEMORY_EXTRACTION_PROMPT = `You are analyzing a completed phone call to extract useful information that should be remembered for future calls.
 

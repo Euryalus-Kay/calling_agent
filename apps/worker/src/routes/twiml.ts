@@ -21,32 +21,13 @@ function buildGreeting(callId: string | undefined): string {
 
   const profile = session.userProfile as Record<string, unknown>;
   const userName = String(profile?.full_name || '').trim();
-  const businessName = session.businessName || '';
   const purpose = session.purpose || '';
-
-  // Determine scenario: business vs personal contact
-  const purposeLower = purpose.toLowerCase();
-  const nameLower = businessName.toLowerCase();
-  const isPersonal =
-    purposeLower.includes('friend') ||
-    purposeLower.includes('tell them') ||
-    purposeLower.includes('let them know') ||
-    purposeLower.includes('pass along') ||
-    purposeLower.includes('message') ||
-    nameLower.includes('mom') ||
-    nameLower.includes('dad') ||
-    nameLower.includes('wife') ||
-    nameLower.includes('husband');
 
   // Build a short, natural purpose snippet for the greeting
   const shortPurpose = purpose.length > 80 ? purpose.slice(0, 77) + '...' : purpose;
 
-  if (isPersonal && userName) {
-    return `Hey there, this is an AI assistant calling on behalf of ${userName}. I'm reaching out about ${shortPurpose}.`;
-  }
-
   if (userName) {
-    return `Hi there, I'm an AI assistant calling on behalf of ${userName} regarding ${shortPurpose}.`;
+    return `Hi there, I'm an AI assistant calling on behalf of ${userName}. I'm reaching out about ${shortPurpose}.`;
   }
 
   return `Hi there, I'm an AI assistant calling about ${shortPurpose}.`;
