@@ -820,7 +820,7 @@ export function PlanningChat({
   const showInput = currentStatus !== 'ready';
   const showPlan = currentPlan && currentStatus === 'ready';
 
-  // Full-screen initiating overlay
+  // Full-screen ultra-modern initiating overlay
   if (initiating) {
     return (
       <div
@@ -832,33 +832,103 @@ export function PlanningChat({
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#FFFFFF',
-          animationName: 'initOverlayIn',
-          animationDuration: '0.4s',
+          background: 'linear-gradient(135deg, #0a0a0a 0%, #111111 50%, #0a0a0a 100%)',
+          animationName: 'overlayFadeIn',
+          animationDuration: '0.5s',
           animationFillMode: 'both',
-          animationTimingFunction: 'ease-out',
+          animationTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          overflow: 'hidden',
         }}
       >
-        {/* Animated rings */}
-        <div style={{ position: 'relative', height: 120, width: 120, marginBottom: 32 }}>
+        {/* Ambient glow background */}
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -60%)',
+          width: 600,
+          height: 600,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(35,131,226,0.12) 0%, rgba(35,131,226,0.04) 40%, transparent 70%)',
+          animationName: 'ambientBreath',
+          animationDuration: '4s',
+          animationIterationCount: 'infinite',
+          animationTimingFunction: 'ease-in-out',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Subtle grid overlay */}
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
+          backgroundSize: '60px 60px',
+          pointerEvents: 'none',
+        }} />
+
+        {/* Orbiting rings */}
+        <div style={{
+          position: 'relative',
+          height: 160,
+          width: 160,
+          marginBottom: 48,
+        }}>
+          {/* Ring 1 — outer */}
           <div style={{
             position: 'absolute',
-            inset: 0,
+            inset: -20,
             borderRadius: '50%',
-            border: `2px solid rgba(35,131,226,0.1)`,
-            animationName: 'ringPulse',
-            animationDuration: '2s',
+            border: '1px solid rgba(35,131,226,0.15)',
+            animationName: 'orbitSpin',
+            animationDuration: '8s',
             animationIterationCount: 'infinite',
-            animationTimingFunction: 'ease-out',
-          }} />
+            animationTimingFunction: 'linear',
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: -3,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              height: 6,
+              width: 6,
+              borderRadius: '50%',
+              backgroundColor: 'rgba(35,131,226,0.6)',
+              boxShadow: '0 0 12px rgba(35,131,226,0.4)',
+            }} />
+          </div>
+
+          {/* Ring 2 — mid */}
           <div style={{
             position: 'absolute',
-            inset: 10,
+            inset: 5,
             borderRadius: '50%',
-            border: `2px solid rgba(35,131,226,0.15)`,
-            animationName: 'ringPulse',
-            animationDuration: '2s',
-            animationDelay: '0.3s',
+            border: '1px solid rgba(35,131,226,0.1)',
+            animationName: 'orbitSpinReverse',
+            animationDuration: '6s',
+            animationIterationCount: 'infinite',
+            animationTimingFunction: 'linear',
+          }}>
+            <div style={{
+              position: 'absolute',
+              bottom: -3,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              height: 5,
+              width: 5,
+              borderRadius: '50%',
+              backgroundColor: 'rgba(35,131,226,0.4)',
+              boxShadow: '0 0 8px rgba(35,131,226,0.3)',
+            }} />
+          </div>
+
+          {/* Ring 3 — expanding pulse */}
+          <div style={{
+            position: 'absolute',
+            inset: 20,
+            borderRadius: '50%',
+            border: '1px solid rgba(35,131,226,0.2)',
+            animationName: 'ringExpand',
+            animationDuration: '2.5s',
             animationIterationCount: 'infinite',
             animationTimingFunction: 'ease-out',
           }} />
@@ -866,116 +936,209 @@ export function PlanningChat({
             position: 'absolute',
             inset: 20,
             borderRadius: '50%',
-            border: `2px solid rgba(35,131,226,0.2)`,
-            animationName: 'ringPulse',
-            animationDuration: '2s',
-            animationDelay: '0.6s',
+            border: '1px solid rgba(35,131,226,0.2)',
+            animationName: 'ringExpand',
+            animationDuration: '2.5s',
+            animationDelay: '1.25s',
             animationIterationCount: 'infinite',
             animationTimingFunction: 'ease-out',
           }} />
+
+          {/* Center icon */}
           <div style={{
             position: 'absolute',
-            inset: 30,
+            inset: 40,
             borderRadius: '50%',
-            backgroundColor: 'rgba(35,131,226,0.08)',
+            background: 'linear-gradient(135deg, rgba(35,131,226,0.15) 0%, rgba(35,131,226,0.05) 100%)',
+            backdropFilter: 'blur(20px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            border: '1px solid rgba(35,131,226,0.2)',
           }}>
             <Phone style={{
-              height: 28,
-              width: 28,
-              color: COLORS.accent,
-              animationName: 'phoneRing',
-              animationDuration: '0.5s',
+              height: 32,
+              width: 32,
+              color: '#2383E2',
+              filter: 'drop-shadow(0 0 8px rgba(35,131,226,0.4))',
+              animationName: 'phoneFloat',
+              animationDuration: '3s',
               animationIterationCount: 'infinite',
-              animationDirection: 'alternate',
               animationTimingFunction: 'ease-in-out',
             }} />
           </div>
         </div>
 
-        <h2 style={{
-          fontSize: 20,
-          fontWeight: 600,
-          color: COLORS.text,
-          margin: '0 0 8px',
-          animationName: 'fadeInUp',
-          animationDuration: '0.5s',
+        {/* Status text */}
+        <div style={{
+          textAlign: 'center',
+          animationName: 'contentSlideUp',
+          animationDuration: '0.6s',
           animationDelay: '0.2s',
           animationFillMode: 'both',
+          animationTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
         }}>
-          Placing your calls
-        </h2>
-        <p style={{
-          fontSize: 14,
-          color: COLORS.secondary,
-          margin: 0,
-          animationName: 'fadeInUp',
-          animationDuration: '0.5s',
-          animationDelay: '0.4s',
-          animationFillMode: 'both',
-        }}>
-          {activeCalls.length} call{activeCalls.length !== 1 ? 's' : ''} going out now...
-        </p>
+          <h2 style={{
+            fontSize: 28,
+            fontWeight: 600,
+            color: '#FFFFFF',
+            margin: '0 0 8px',
+            letterSpacing: '-0.02em',
+          }}>
+            Initiating calls
+          </h2>
+          <p style={{
+            fontSize: 15,
+            color: 'rgba(255,255,255,0.5)',
+            margin: 0,
+            fontWeight: 400,
+          }}>
+            Connecting {activeCalls.length} call{activeCalls.length !== 1 ? 's' : ''}
+          </p>
+        </div>
 
-        {/* Call names appearing one by one */}
+        {/* Call cards staggered */}
         <div style={{
-          marginTop: 32,
+          marginTop: 40,
           display: 'flex',
           flexDirection: 'column',
-          gap: 8,
+          gap: 6,
           alignItems: 'center',
+          width: '100%',
+          maxWidth: 400,
+          padding: '0 24px',
         }}>
           {activeCalls.slice(0, 5).map((call, i) => (
             <div key={i} style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 10,
-              padding: '8px 16px',
-              borderRadius: 8,
-              backgroundColor: COLORS.warmBg,
-              animationName: 'fadeInUp',
-              animationDuration: '0.4s',
-              animationDelay: `${0.5 + i * 0.15}s`,
+              gap: 12,
+              width: '100%',
+              padding: '12px 16px',
+              borderRadius: 12,
+              backgroundColor: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              backdropFilter: 'blur(10px)',
+              animationName: 'cardSlideIn',
+              animationDuration: '0.5s',
+              animationDelay: `${0.4 + i * 0.1}s`,
               animationFillMode: 'both',
+              animationTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
             }}>
+              {/* Live dot */}
               <div style={{
+                position: 'relative',
                 height: 8,
                 width: 8,
-                borderRadius: '50%',
-                backgroundColor: COLORS.accent,
-                animationName: 'dotPulse',
-                animationDuration: '1.5s',
-                animationIterationCount: 'infinite',
-                animationDelay: `${i * 0.2}s`,
-              }} />
-              <span style={{ fontSize: 14, color: COLORS.text, fontWeight: 500 }}>
-                {call.business_name}
-              </span>
-              <span style={{ fontSize: 12, color: COLORS.secondary, fontFamily: 'monospace' }}>
+                flexShrink: 0,
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  backgroundColor: '#2383E2',
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  inset: -3,
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(35,131,226,0.3)',
+                  animationName: 'livePing',
+                  animationDuration: '1.5s',
+                  animationIterationCount: 'infinite',
+                  animationDelay: `${i * 0.3}s`,
+                }} />
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{
+                  fontSize: 14,
+                  color: '#FFFFFF',
+                  fontWeight: 500,
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {call.business_name}
+                </span>
+              </div>
+
+              <span style={{
+                fontSize: 12,
+                color: 'rgba(255,255,255,0.3)',
+                fontFamily: 'ui-monospace, monospace',
+                fontWeight: 400,
+                flexShrink: 0,
+              }}>
                 {call.phone_number}
               </span>
             </div>
           ))}
         </div>
 
+        {/* Bottom progress bar */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 2,
+          backgroundColor: 'rgba(255,255,255,0.05)',
+          overflow: 'hidden',
+        }}>
+          <div style={{
+            height: '100%',
+            backgroundColor: '#2383E2',
+            boxShadow: '0 0 12px rgba(35,131,226,0.5)',
+            animationName: 'progressSweep',
+            animationDuration: '2s',
+            animationIterationCount: 'infinite',
+            animationTimingFunction: 'ease-in-out',
+          }} />
+        </div>
+
         <style>{`
-          @keyframes initOverlayIn {
+          @keyframes overlayFadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
           }
-          @keyframes ringPulse {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(1.4); opacity: 0; }
+          @keyframes ambientBreath {
+            0%, 100% { transform: translate(-50%, -60%) scale(1); opacity: 0.8; }
+            50% { transform: translate(-50%, -60%) scale(1.15); opacity: 1; }
           }
-          @keyframes phoneRing {
-            0% { transform: rotate(-8deg); }
-            100% { transform: rotate(8deg); }
+          @keyframes orbitSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
           }
-          @keyframes dotPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
+          @keyframes orbitSpinReverse {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+          }
+          @keyframes ringExpand {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(2.2); opacity: 0; }
+          }
+          @keyframes phoneFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+          }
+          @keyframes contentSlideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes cardSlideIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          @keyframes livePing {
+            0% { transform: scale(1); opacity: 0.6; }
+            100% { transform: scale(2.5); opacity: 0; }
+          }
+          @keyframes progressSweep {
+            0% { width: 0%; margin-left: 0%; }
+            50% { width: 40%; margin-left: 30%; }
+            100% { width: 0%; margin-left: 100%; }
           }
         `}</style>
       </div>

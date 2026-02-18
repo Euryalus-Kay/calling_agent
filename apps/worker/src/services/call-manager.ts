@@ -14,6 +14,7 @@ export async function initiateCall(
 
   // Use provided caller ID (verified user number), or get one from the pool
   const from = fromNumber || getAvailableNumber(callId);
+  console.log(`[CallManager] Call ${callId}: fromNumber=${fromNumber || 'none'}, using from=${from}`);
 
   const call = await client.calls.create({
     from,

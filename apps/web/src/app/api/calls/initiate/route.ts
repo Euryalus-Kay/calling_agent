@@ -74,6 +74,10 @@ export async function POST(request: Request) {
     const tier = (profileRow?.account_tier as AccountTier) || 'free';
     const limits = getTierLimits(tier);
 
+    // Debug: log the verified caller ID
+    const verifiedCallerId = profileRow?.verified_caller_id;
+    console.log(`[Initiate] User ${user.id} verified_caller_id: ${verifiedCallerId || 'NOT SET'}, tier: ${tier}`);
+
     // Check concurrent call limit (tier-based)
     const { count } = await admin
       .from('calls')
