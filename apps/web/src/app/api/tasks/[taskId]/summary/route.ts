@@ -75,7 +75,7 @@ export async function POST(
     const admin = createSupabaseAdminClient();
     const callIds = calls.map((c) => c.id);
     const { data: transcripts } = await admin
-      .from('call_transcripts')
+      .from('transcript_entries')
       .select('call_id, speaker, content, event_type')
       .in('call_id', callIds)
       .order('created_at', { ascending: true });

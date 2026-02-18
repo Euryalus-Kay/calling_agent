@@ -5,6 +5,7 @@ import { useRealtimeCalls } from '@/hooks/use-realtime-calls';
 import { PlanningChat } from './planning-chat';
 import { CallCard } from './call-card';
 import { CallSummary } from './call-summary';
+import { PostCallQuestions } from './post-call-questions';
 import {
   Phone,
   Clock,
@@ -303,6 +304,15 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
 
       {/* Summary when all done */}
       {stats.allDone && <CallSummary taskId={taskId} calls={calls} />}
+
+      {/* Post-call follow-up questions to build memory */}
+      {stats.allDone && (
+        <PostCallQuestions
+          taskId={taskId}
+          allCallsDone={stats.allDone}
+          summaryReady={!!task.summary}
+        />
+      )}
     </div>
   );
 }

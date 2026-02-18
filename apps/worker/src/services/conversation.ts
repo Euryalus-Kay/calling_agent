@@ -10,7 +10,8 @@ export type CallEvent =
   | { type: 'voicemail' }
   | { type: 'dtmf'; digit: string }
   | { type: 'retry_needed'; reason: string }
-  | { type: 'answer'; question: string; value: string };
+  | { type: 'answer'; question: string; value: string }
+  | { type: 'need_info'; question: string };
 
 interface ConversationResult {
   structured: Record<string, unknown>;
@@ -244,7 +245,19 @@ export class ConversationManager {
       this._events.push({ type: 'answer', question: match[1], value: match[2] });
     }
 
+    // Parse NEED_INFO tokens
+    const needInfoMatch = text.match(/\[NEED_INFO:(.+?)\]/);
+    if (needInfoMatch) {
+      cleanText = cleanText.replace(needInfoMatch[0], '').trim();
+      this._events.push({ type: 'need_info', question: needInfoMatch[1] });
+    }
+
     return { cleanText, shouldEnd, isTransfer, isOnHold, isOffHold, isVoicemail, dtmfDigits, retryReason, answers };
+  }
+
+  /** Inject a system message (e.g., user response to NEED_INFO) into the conversation */
+  injectSystemMessage(content: string): void {
+    this.messages.push({ role: 'user', content: `[SYSTEM: The user has provided the following information: ${content}]` });
   }
 
   private generateSummary(): string {

@@ -7,6 +7,13 @@ import { extractAndSaveMemories } from '../services/memory-extractor.js';
 import { releaseNumber } from '../services/call-manager.js';
 import type { ConversationRelayMessage } from '../types/index.js';
 
+// In-memory map of active call conversations (for user responses and hangup)
+const activeConversations = new Map<string, { conversation: ConversationManager; socket: import('ws').WebSocket }>();
+
+export function getActiveConversation(callId: string) {
+  return activeConversations.get(callId);
+}
+
 export async function websocketRoute(fastify: FastifyInstance) {
   fastify.register(async function (fastify) {
     fastify.get('/ws', { websocket: true }, (socket, request) => {
@@ -101,6 +108,7 @@ export async function websocketRoute(fastify: FastifyInstance) {
                 .eq('id', callId);
 
               conversation = new ConversationManager(callId, callData);
+              activeConversations.set(callId, { conversation, socket });
               fastify.log.info(
                 `Conversation initialized for call ${callId} to ${callData.businessName}`
               );
@@ -175,6 +183,20 @@ export async function websocketRoute(fastify: FastifyInstance) {
 
                   case 'retry_needed':
                     await logSystemEvent('retry_needed', `Retry needed: ${event.reason}`);
+                    break;
+
+                  case 'need_info':
+                    await updateCallStatus('in_progress', {
+                      status_detail: `Waiting for info: ${event.question}`,
+                    });
+                    await logSystemEvent('need_info', event.question);
+                    // Insert a notification row so the web UI can display the question
+                    await supabaseAdmin.from('transcript_entries').insert({
+                      call_id: callId,
+                      speaker: 'system',
+                      content: event.question,
+                      event_type: 'need_info',
+                    });
                     break;
                 }
               }
@@ -301,6 +323,8 @@ export async function websocketRoute(fastify: FastifyInstance) {
         stopHoldTimer();
 
         if (callId) {
+          // Remove from active conversations
+          activeConversations.delete(callId);
           // Release the phone number back to the pool
           releaseNumber(callId);
 

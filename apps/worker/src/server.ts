@@ -6,6 +6,7 @@ import { websocketRoute } from './routes/websocket.js';
 import { statusCallbackRoute } from './routes/status-callback.js';
 import { enqueueCallRoute } from './routes/enqueue-call.js';
 import { smsRoutes } from './routes/sms.js';
+import { callControlRoute } from './routes/call-control.js';
 import { startWorker } from './worker/call-worker.js';
 import { startSMSWorker } from './worker/sms-worker.js';
 import { config } from './config.js';
@@ -29,6 +30,7 @@ fastify.register(websocketRoute);
 fastify.register(statusCallbackRoute);
 fastify.register(enqueueCallRoute);
 fastify.register(smsRoutes);
+fastify.register(callControlRoute);
 
 // Health check
 fastify.get('/health', async () => ({

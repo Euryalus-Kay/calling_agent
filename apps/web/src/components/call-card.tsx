@@ -18,6 +18,8 @@ import {
   BookUser,
   FileText,
   Lightbulb,
+  Send,
+  AlertCircle,
 } from 'lucide-react';
 import type { Call } from '@/types';
 
@@ -93,6 +95,9 @@ function HoldTimer({ holdStartedAt }: { holdStartedAt: string }) {
 export function CallCard({ call }: { call: Call }) {
   const [showTranscript, setShowTranscript] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
+  const [hangingUp, setHangingUp] = useState(false);
+  const [responseText, setResponseText] = useState('');
+  const [sendingResponse, setSendingResponse] = useState(false);
 
   const config = statusConfig[call.status] || statusConfig.queued;
   const StatusIcon = config.icon;
@@ -101,7 +106,12 @@ export function CallCard({ call }: { call: Call }) {
   const isLiveTranscript = SHOW_TRANSCRIPT_STATUSES.includes(call.status);
   const isOnHold = call.status === 'on_hold';
 
+  // Detect if AI needs info from user (check status_detail for "Waiting for info:")
+  const needsInfo = call.status_detail?.startsWith('Waiting for info:');
+  const infoQuestion = needsInfo ? call.status_detail!.replace('Waiting for info: ', '') : null;
+
   const getBorderColor = () => {
+    if (needsInfo) return '#D9730D';
     if (isActive && !isOnHold && call.status !== 'retrying') return '#4DAB9A';
     if (isOnHold) return '#CB912F';
     if (call.status === 'retrying') return '#CB912F';
@@ -113,6 +123,37 @@ export function CallCard({ call }: { call: Call }) {
   const hasMemories = !!(call.memory_extraction?.memories?.length && call.memory_extraction.memories.length > 0);
   const hasContact = !!call.memory_extraction?.contact_saved;
   const hasInsights = hasMemories || hasContact;
+
+  async function handleHangup() {
+    setHangingUp(true);
+    try {
+      await fetch('/api/calls/hangup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callId: call.id }),
+      });
+    } catch {
+      // Ignore — status will update via realtime
+    }
+    // Don't reset hangingUp — the card will update when status changes
+  }
+
+  async function handleSendResponse() {
+    if (!responseText.trim()) return;
+    setSendingResponse(true);
+    try {
+      await fetch('/api/calls/respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callId: call.id, response: responseText.trim() }),
+      });
+      setResponseText('');
+    } catch {
+      // Ignore
+    } finally {
+      setSendingResponse(false);
+    }
+  }
 
   return (
     <div style={{
@@ -204,8 +245,40 @@ export function CallCard({ call }: { call: Call }) {
           </div>
         </div>
 
-        {/* Status badge + duration */}
+        {/* Status badge + hangup */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {/* Hangup button for active calls */}
+          {isActive && !hangingUp && call.status !== 'queued' && call.status !== 'retrying' && (
+            <button
+              onClick={handleHangup}
+              title="End this call"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 28,
+                height: 28,
+                borderRadius: 6,
+                backgroundColor: 'rgba(235,87,87,0.06)',
+                border: '1px solid rgba(235,87,87,0.2)',
+                color: '#EB5757',
+                cursor: 'pointer',
+                transition: 'all 150ms',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(235,87,87,0.12)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(235,87,87,0.06)';
+              }}
+            >
+              <PhoneOff style={{ height: 13, width: 13 }} />
+            </button>
+          )}
+          {hangingUp && (
+            <Loader2 style={{ height: 16, width: 16, color: '#EB5757', animation: 'spin 1s linear infinite' }} />
+          )}
+
           {call.duration_seconds != null && call.duration_seconds > 0 && isDone && (
             <span style={{ fontSize: 12, color: '#787774', fontFamily: 'monospace', fontVariantNumeric: 'tabular-nums' }}>
               {Math.floor(call.duration_seconds / 60)}m {call.duration_seconds % 60}s
@@ -251,7 +324,7 @@ export function CallCard({ call }: { call: Call }) {
       </div>
 
       {/* Status detail bar */}
-      {call.status_detail && isActive && (
+      {call.status_detail && isActive && !needsInfo && (
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -266,8 +339,87 @@ export function CallCard({ call }: { call: Call }) {
         </div>
       )}
 
+      {/* NEED_INFO banner — AI is asking the user for information */}
+      {needsInfo && infoQuestion && (
+        <div style={{
+          padding: '12px 16px',
+          backgroundColor: 'rgba(217,115,13,0.04)',
+          borderTop: '1px solid rgba(217,115,13,0.15)',
+          borderBottom: '1px solid rgba(217,115,13,0.15)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 10 }}>
+            <AlertCircle style={{ height: 16, width: 16, color: '#D9730D', flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#37352F', margin: 0 }}>
+                The AI needs your help
+              </p>
+              <p style={{ fontSize: 13, color: '#787774', margin: '4px 0 0', lineHeight: 1.5 }}>
+                {infoQuestion}
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              placeholder="Type your answer..."
+              value={responseText}
+              onChange={(e) => setResponseText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && responseText.trim()) handleSendResponse();
+              }}
+              style={{
+                flex: 1,
+                height: 32,
+                padding: '0 10px',
+                fontSize: 13,
+                color: '#37352F',
+                background: '#FFFFFF',
+                border: '1px solid #E3E2DE',
+                borderRadius: 6,
+                outline: 'none',
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = '#D9730D';
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(217,115,13,0.15)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = '#E3E2DE';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
+            <button
+              onClick={handleSendResponse}
+              disabled={sendingResponse || !responseText.trim()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 32,
+                padding: '0 12px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#FFFFFF',
+                background: '#D9730D',
+                border: 'none',
+                borderRadius: 6,
+                cursor: sendingResponse || !responseText.trim() ? 'not-allowed' : 'pointer',
+                opacity: sendingResponse || !responseText.trim() ? 0.5 : 1,
+                gap: 6,
+              }}
+            >
+              {sendingResponse ? (
+                <Loader2 style={{ height: 13, width: 13, animation: 'spin 1s linear infinite' }} />
+              ) : (
+                <Send style={{ height: 13, width: 13 }} />
+              )}
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Purpose — only for non-completed calls */}
-      {!isDone && (
+      {!isDone && !needsInfo && (
         <div style={{ padding: '0 16px 12px' }}>
           <p style={{ fontSize: 13, color: '#787774', margin: 0, lineHeight: 1.5 }}>{call.purpose}</p>
         </div>

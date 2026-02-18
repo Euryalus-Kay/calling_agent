@@ -292,18 +292,19 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
             border: '1px solid #E3E2DE',
             borderRadius: 8,
             boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+            overflow: 'hidden',
           }}>
             <div style={{ padding: '16px 20px' }}>
               <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>
-                <Phone style={{ height: 18, width: 18, color: '#2383E2' }} />
+                <Phone style={{ height: 18, width: 18, color: '#2383E2', flexShrink: 0 }} />
                 Your Phone Number
               </h2>
-              <p style={{ fontSize: 12, color: '#787774', marginTop: 4 }}>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 4, margin: '4px 0 0' }}>
                 Verify your number so calls show your real caller ID. People you call can call you back directly on this number.
               </p>
             </div>
             <div style={{ height: 1, background: '#E3E2DE' }} />
-            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
               {verifiedCallerId ? (
                 <div style={{
                   display: 'flex',
@@ -340,17 +341,20 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
                 </div>
               ) : verifyCode ? (
                 <div style={{
-                  padding: '14px',
-                  borderRadius: 6,
-                  backgroundColor: 'rgba(35,131,226,0.06)',
-                  border: '1px solid rgba(35,131,226,0.2)',
+                  padding: '16px',
+                  borderRadius: 8,
+                  backgroundColor: 'rgba(35,131,226,0.04)',
+                  border: '1px solid rgba(35,131,226,0.15)',
                 }}>
-                  <p style={{ fontSize: 14, color: '#37352F', margin: '0 0 8px', fontWeight: 500 }}>
+                  <p style={{ fontSize: 14, color: '#37352F', margin: '0 0 6px', fontWeight: 500 }}>
                     Twilio is calling {verifyPhone} now
                   </p>
-                  <p style={{ fontSize: 13, color: '#787774', margin: '0 0 12px' }}>
-                    When you answer, enter this code: <strong style={{ color: '#2383E2', fontSize: 18, letterSpacing: 2 }}>{verifyCode}</strong>
+                  <p style={{ fontSize: 13, color: '#787774', margin: '0 0 14px', lineHeight: 1.5 }}>
+                    When you answer, enter this code:
                   </p>
+                  <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: 6, color: '#2383E2', marginBottom: 14, fontFamily: 'monospace' }}>
+                    {verifyCode}
+                  </div>
                   <button
                     onClick={confirmVerification}
                     disabled={confirming}
