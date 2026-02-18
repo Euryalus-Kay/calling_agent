@@ -18,7 +18,7 @@ export async function twimlRoute(fastify: FastifyInstance) {
       ttsModel="eleven_turbo_v2_5"
       transcriptionProvider="Deepgram"
       speechModel="nova-3-general"
-      welcomeGreeting="Hi there! I'm an AI assistant calling on behalf of someone who needs a bit of help. Do you have a moment?"
+      welcomeGreeting="Hey, how's it going?"
       interruptible="true"
       interruptByDtmf="true"
       dtmfDetection="true"

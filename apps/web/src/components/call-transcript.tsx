@@ -74,10 +74,29 @@ const defaultEventColor = {
   borderColor: 'rgba(120, 119, 116, 0.15)',
 };
 
+/** Format system event content for display */
+function formatEventContent(entry: TranscriptEntry): string {
+  const content = entry.content;
+  const eventType = entry.event_type;
+
+  // answer_captured events come as "question_text: value" — make them nice
+  if (eventType === 'answer_captured') {
+    const match = content.match(/^(.+?):\s*(.+)$/);
+    if (match) {
+      return `${match[1].trim()} \u2192 ${match[2].trim()}`;
+    }
+  }
+
+  return content;
+}
+
 function SystemEvent({ entry }: { entry: TranscriptEntry }) {
   const eventType = entry.event_type || 'default';
   const Icon = eventIcons[eventType] || AlertCircle;
   const colors = eventColors[eventType] || defaultEventColor;
+
+  // Hide noisy events that add clutter
+  if (eventType === 'dtmf' || eventType === 'dtmf_received') return null;
 
   return (
     <div
@@ -101,7 +120,7 @@ function SystemEvent({ entry }: { entry: TranscriptEntry }) {
       }}
     >
       <Icon style={{ height: 12, width: 12, flexShrink: 0 }} />
-      <span>{entry.content}</span>
+      <span>{formatEventContent(entry)}</span>
     </div>
   );
 }

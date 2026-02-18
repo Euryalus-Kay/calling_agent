@@ -783,6 +783,168 @@ export function PlanningChat({
   const showInput = currentStatus !== 'ready';
   const showPlan = currentPlan && currentStatus === 'ready';
 
+  // Full-screen initiating overlay
+  if (initiating) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 50,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#FFFFFF',
+          animationName: 'initOverlayIn',
+          animationDuration: '0.4s',
+          animationFillMode: 'both',
+          animationTimingFunction: 'ease-out',
+        }}
+      >
+        {/* Animated rings */}
+        <div style={{ position: 'relative', height: 120, width: 120, marginBottom: 32 }}>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '50%',
+            border: `2px solid rgba(35,131,226,0.1)`,
+            animationName: 'ringPulse',
+            animationDuration: '2s',
+            animationIterationCount: 'infinite',
+            animationTimingFunction: 'ease-out',
+          }} />
+          <div style={{
+            position: 'absolute',
+            inset: 10,
+            borderRadius: '50%',
+            border: `2px solid rgba(35,131,226,0.15)`,
+            animationName: 'ringPulse',
+            animationDuration: '2s',
+            animationDelay: '0.3s',
+            animationIterationCount: 'infinite',
+            animationTimingFunction: 'ease-out',
+          }} />
+          <div style={{
+            position: 'absolute',
+            inset: 20,
+            borderRadius: '50%',
+            border: `2px solid rgba(35,131,226,0.2)`,
+            animationName: 'ringPulse',
+            animationDuration: '2s',
+            animationDelay: '0.6s',
+            animationIterationCount: 'infinite',
+            animationTimingFunction: 'ease-out',
+          }} />
+          <div style={{
+            position: 'absolute',
+            inset: 30,
+            borderRadius: '50%',
+            backgroundColor: 'rgba(35,131,226,0.08)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <Phone style={{
+              height: 28,
+              width: 28,
+              color: COLORS.accent,
+              animationName: 'phoneRing',
+              animationDuration: '0.5s',
+              animationIterationCount: 'infinite',
+              animationDirection: 'alternate',
+              animationTimingFunction: 'ease-in-out',
+            }} />
+          </div>
+        </div>
+
+        <h2 style={{
+          fontSize: 20,
+          fontWeight: 600,
+          color: COLORS.text,
+          margin: '0 0 8px',
+          animationName: 'fadeInUp',
+          animationDuration: '0.5s',
+          animationDelay: '0.2s',
+          animationFillMode: 'both',
+        }}>
+          Placing your calls
+        </h2>
+        <p style={{
+          fontSize: 14,
+          color: COLORS.secondary,
+          margin: 0,
+          animationName: 'fadeInUp',
+          animationDuration: '0.5s',
+          animationDelay: '0.4s',
+          animationFillMode: 'both',
+        }}>
+          {activeCalls.length} call{activeCalls.length !== 1 ? 's' : ''} going out now...
+        </p>
+
+        {/* Call names appearing one by one */}
+        <div style={{
+          marginTop: 32,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+          alignItems: 'center',
+        }}>
+          {activeCalls.slice(0, 5).map((call, i) => (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '8px 16px',
+              borderRadius: 8,
+              backgroundColor: COLORS.warmBg,
+              animationName: 'fadeInUp',
+              animationDuration: '0.4s',
+              animationDelay: `${0.5 + i * 0.15}s`,
+              animationFillMode: 'both',
+            }}>
+              <div style={{
+                height: 8,
+                width: 8,
+                borderRadius: '50%',
+                backgroundColor: COLORS.accent,
+                animationName: 'dotPulse',
+                animationDuration: '1.5s',
+                animationIterationCount: 'infinite',
+                animationDelay: `${i * 0.2}s`,
+              }} />
+              <span style={{ fontSize: 14, color: COLORS.text, fontWeight: 500 }}>
+                {call.business_name}
+              </span>
+              <span style={{ fontSize: 12, color: COLORS.secondary, fontFamily: 'monospace' }}>
+                {call.phone_number}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <style>{`
+          @keyframes initOverlayIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes ringPulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.4); opacity: 0; }
+          }
+          @keyframes phoneRing {
+            0% { transform: rotate(-8deg); }
+            100% { transform: rotate(8deg); }
+          }
+          @keyframes dotPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -1145,7 +1307,6 @@ export function PlanningChat({
               {activeCalls.length > 0 && (
                 <button
                   onClick={handleStartCalls}
-                  disabled={initiating}
                   style={{
                     width: '100%',
                     marginTop: 16,
@@ -1157,33 +1318,19 @@ export function PlanningChat({
                     justifyContent: 'center',
                     borderRadius: 8,
                     border: 'none',
-                    backgroundColor: initiating
-                      ? COLORS.border
-                      : COLORS.accent,
+                    backgroundColor: COLORS.accent,
                     color: COLORS.white,
-                    cursor: initiating ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
                     transition: 'all 200ms',
                     padding: 0,
                   }}
                 >
-                  {initiating ? (
-                    <>
-                      <Loader2
-                        className="notion-spin"
-                        style={{ marginRight: 8, height: 16, width: 16 }}
-                      />
-                      Starting calls...
-                    </>
-                  ) : (
-                    <>
-                      <Phone
-                        style={{ marginRight: 8, height: 16, width: 16 }}
-                      />
-                      Start {activeCalls.length} Call
-                      {activeCalls.length !== 1 ? 's' : ''}
-                    </>
-                  )}
+                  <Phone
+                    style={{ marginRight: 8, height: 16, width: 16 }}
+                  />
+                  Start {activeCalls.length} Call
+                  {activeCalls.length !== 1 ? 's' : ''}
                 </button>
               )}
 

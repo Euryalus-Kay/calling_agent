@@ -402,15 +402,16 @@ export function CallCard({ call }: { call: Call }) {
             </div>
           )}
 
-          {/* Purpose */}
-          <div style={{
-            borderRadius: 6,
-            backgroundColor: '#F7F6F3',
-            padding: 12,
-          }}>
-            <p style={{ fontSize: 12, fontWeight: 500, color: '#787774', marginBottom: 4 }}>Purpose</p>
-            <p style={{ fontSize: 14, color: '#37352F', margin: 0, lineHeight: 1.5 }}>{call.purpose}</p>
-          </div>
+          {/* Purpose — only for non-completed calls */}
+          {!isDone && (
+            <div style={{
+              borderRadius: 6,
+              backgroundColor: '#F7F6F3',
+              padding: 12,
+            }}>
+              <p style={{ fontSize: 13, color: '#787774', margin: 0, lineHeight: 1.5 }}>{call.purpose}</p>
+            </div>
+          )}
 
           {/* Live transcript */}
           {showTranscript && (
@@ -452,77 +453,48 @@ export function CallCard({ call }: { call: Call }) {
             </div>
           )}
 
-          {/* Completed transcript */}
-          {call.status === 'completed' && (
-            <CallTranscript callId={call.id} />
-          )}
-
           {/* Result */}
           {call.result_summary && (() => {
             const { header, pairs } = parseResultSummary(call.result_summary);
             return (
               <div style={{
                 borderRadius: 6,
-                backgroundColor: 'rgba(77,171,154,0.06)',
-                border: '1px solid rgba(77,171,154,0.2)',
-                padding: 12,
+                padding: '12px 14px',
+                backgroundColor: '#F7F6F3',
               }}>
-                <p style={{
-                  fontSize: 12,
-                  fontWeight: 500,
-                  color: '#4DAB9A',
-                  marginBottom: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}>
-                  <CheckCircle style={{ height: 14, width: 14 }} />
-                  What I found
-                </p>
-
-                <div style={{
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #E3E2DE',
-                  borderRadius: 6,
-                  padding: '10px 14px',
-                }}>
-                  {header && (
-                    <p style={{
-                      fontSize: 14,
-                      fontWeight: 500,
-                      color: '#37352F',
-                      margin: 0,
-                      paddingBottom: pairs.length > 0 ? 10 : 0,
-                      borderBottom: pairs.length > 0 ? '1px solid #F0EFEC' : 'none',
-                    }}>
-                      {header}
-                    </p>
-                  )}
-                  {pairs.length > 0 && (
-                    <div style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 8,
-                      paddingTop: header ? 10 : 0,
-                    }}>
-                      {pairs.map((pair, idx) => (
-                        <div key={idx} style={{ lineHeight: 1.5 }}>
-                          {pair.question && (
-                            <span style={{ fontSize: 13, color: '#787774' }}>
-                              {pair.question}
-                            </span>
-                          )}
-                          {pair.question && pair.answer && (
-                            <span style={{ fontSize: 13, color: '#9B9A97', margin: '0 6px' }}>&mdash;</span>
-                          )}
-                          <span style={{ fontSize: 13, color: '#37352F', fontWeight: 500 }}>
-                            {pair.answer}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                {header && (
+                  <p style={{
+                    fontSize: 14,
+                    color: '#37352F',
+                    margin: 0,
+                    lineHeight: 1.6,
+                    marginBottom: pairs.length > 0 ? 10 : 0,
+                  }}>
+                    {header}
+                  </p>
+                )}
+                {pairs.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                  }}>
+                    {pairs.map((pair, idx) => (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        alignItems: 'baseline',
+                        gap: 8,
+                        fontSize: 13,
+                        lineHeight: 1.5,
+                      }}>
+                        {pair.question && (
+                          <span style={{ color: '#787774', flexShrink: 0 }}>{pair.question}</span>
+                        )}
+                        <span style={{ color: '#37352F', fontWeight: 500 }}>{pair.answer}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })()}
