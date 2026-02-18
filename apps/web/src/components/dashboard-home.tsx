@@ -1296,10 +1296,11 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData }: Dashb
                     }}
                   >
                     {[
-                      { icon: Phone, text: 'Navigate phone menus and IVR systems' },
+                      { icon: Phone, text: 'Calls show your real number — people can call you back' },
                       { icon: Clock, text: 'Wait on hold so you don\'t have to' },
                       { icon: PhoneCall, text: 'Make up to 5 calls at the same time' },
-                      { icon: Sparkles, text: 'Adapt to unexpected situations' },
+                      { icon: MessageCircle, text: 'Send texts via SMS too' },
+                      { icon: Sparkles, text: 'Navigate menus, adapt to any situation' },
                       { icon: CheckCircle, text: 'Auto-retry if a line is busy' },
                     ].map((item) => (
                       <div

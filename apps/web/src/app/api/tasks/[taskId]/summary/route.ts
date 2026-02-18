@@ -115,33 +115,51 @@ ${call.duration_seconds ? `Duration: ${Math.floor(call.duration_seconds / 60)}m 
       })
       .join('\n\n---\n\n');
 
-    // Web search for business context (non-blocking, enriches summary with addresses/links)
+    // Smart web search: only search for businesses/organizations, not personal contacts
     let webContext = '';
     try {
       const braveKey = process.env.BRAVE_SEARCH_API_KEY;
       if (braveKey) {
-        const uniqueBusinesses = [...new Set(calls.map((c) => c.business_name).filter(Boolean))];
-        const searchResults = await Promise.allSettled(
-          uniqueBusinesses.slice(0, 3).map(async (biz: string) => {
-            const query = `${biz} address hours website`;
-            const res = await fetch(
-              `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=3`,
-              { headers: { 'X-Subscription-Token': braveKey, Accept: 'application/json' } }
-            );
-            if (!res.ok) return null;
-            const data = await res.json();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const snippets = (data.web?.results || []).slice(0, 3).map((r: any) =>
-              `${r.title}: ${r.description}${r.url ? ` (${r.url})` : ''}`
-            );
-            return snippets.length > 0 ? `${biz}:\n${snippets.join('\n')}` : null;
-          })
-        );
-        const validResults = searchResults
-          .filter((r): r is PromiseFulfilledResult<string | null> => r.status === 'fulfilled' && !!r.value)
-          .map((r) => r.value);
-        if (validResults.length > 0) {
-          webContext = `WEB SEARCH CONTEXT (use to enrich summary with addresses, links, hours, etc.):\n${validResults.join('\n\n')}`;
+        // Filter to likely businesses (skip personal names / contacts)
+        const personalIndicators = ['mom', 'dad', 'wife', 'husband', 'friend', 'brother', 'sister'];
+        const uniqueBusinesses = [...new Set(
+          calls
+            .filter((c) => {
+              const name = (c.business_name || '').toLowerCase();
+              const purpose = (c.purpose || '').toLowerCase();
+              // Skip if the name looks like a personal contact
+              if (personalIndicators.some((p) => name.includes(p))) return false;
+              // Skip if purpose is clearly personal (message, tell them, etc.)
+              if (['tell them', 'let them know', 'pass along', 'message from'].some((p) => purpose.includes(p))) return false;
+              return true;
+            })
+            .map((c) => c.business_name)
+            .filter(Boolean)
+        )];
+
+        if (uniqueBusinesses.length > 0) {
+          const searchResults = await Promise.allSettled(
+            uniqueBusinesses.slice(0, 3).map(async (biz: string) => {
+              const query = `${biz} address hours website`;
+              const res = await fetch(
+                `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=3`,
+                { headers: { 'X-Subscription-Token': braveKey, Accept: 'application/json' } }
+              );
+              if (!res.ok) return null;
+              const data = await res.json();
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const snippets = (data.web?.results || []).slice(0, 3).map((r: any) =>
+                `${r.title}: ${r.description}${r.url ? ` (${r.url})` : ''}`
+              );
+              return snippets.length > 0 ? `${biz}:\n${snippets.join('\n')}` : null;
+            })
+          );
+          const validResults = searchResults
+            .filter((r): r is PromiseFulfilledResult<string | null> => r.status === 'fulfilled' && !!r.value)
+            .map((r) => r.value);
+          if (validResults.length > 0) {
+            webContext = `WEB SEARCH CONTEXT (use to enrich summary with addresses, links, hours, etc.):\n${validResults.join('\n\n')}`;
+          }
         }
       }
     } catch (err) {

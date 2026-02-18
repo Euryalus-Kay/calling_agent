@@ -43,10 +43,10 @@ const NUDGES: NudgeConfig[] = [
   {
     id: 'caller_id',
     icon: Shield,
-    title: 'Verify your caller ID',
-    description: 'Make calls show your real number instead of a random one.',
+    title: 'Call from your own number',
+    description: 'Verify your phone so calls show your real number and people can call you back.',
     href: '/settings',
-    linkText: 'Verify now',
+    linkText: 'Set up now',
     color: '#6940A5',
     bgColor: 'rgba(105, 64, 165, 0.04)',
   },

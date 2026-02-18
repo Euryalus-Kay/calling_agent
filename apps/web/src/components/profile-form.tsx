@@ -143,10 +143,10 @@ export function ProfileForm({ profile }: { profile: UserProfile }) {
         <div style={{ padding: '20px 20px 8px' }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Phone style={{ height: 18, width: 18, color: '#2383E2' }} />
-            Outbound Caller ID
+            Your Phone Number
           </h2>
           <p style={{ fontSize: 13, color: '#787774', margin: '6px 0 0' }}>
-            Verify your phone number so people see your real number when we call on your behalf
+            Verify your number so calls show your caller ID. People you call can call you back directly on this number.
           </p>
         </div>
         <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
