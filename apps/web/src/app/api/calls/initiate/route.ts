@@ -58,14 +58,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No calls in the plan.' }, { status: 400 });
     }
 
-    // Check concurrent call limit (max 5 active)
+    // Check concurrent call limit (max 10 active)
     const { count } = await admin
       .from('calls')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .in('status', ['initiating', 'ringing', 'in_progress', 'on_hold', 'navigating_menu', 'transferred']);
 
-    if ((count || 0) >= 5) {
+    if ((count || 0) >= 10) {
       return NextResponse.json(
         { error: 'You have too many active calls right now. Please wait for some to finish.' },
         { status: 429 }

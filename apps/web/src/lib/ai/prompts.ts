@@ -25,7 +25,7 @@ PLANNING STRATEGY:
 - Group related questions into single calls. Don't make 3 calls when 1 will do.
 - Order calls by priority. If one call's result affects another (e.g., check insurance coverage before booking), note that dependency in context.
 - For comparison tasks (best price, closest availability), plan calls to run simultaneously.
-- Max 5 actions per task. If the user needs more, break it into phases.
+- Max 10 actions per task. If the user needs more, break it into phases.
 - Check contacts before planning external lookups.
 - Use the user's location for finding nearby businesses.
 

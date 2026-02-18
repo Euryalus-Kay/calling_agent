@@ -142,7 +142,7 @@ export function startWorker() {
     },
     {
       connection,
-      concurrency: 5,
+      concurrency: 10,
       removeOnComplete: { count: 1000 },
       removeOnFail: { count: 5000 },
     }
