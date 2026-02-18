@@ -16,12 +16,14 @@ import {
   Settings,
   Mic,
   Bell,
-  ShieldPlus,
+  Phone,
   AlertTriangle,
   Save,
   Loader2,
   Download,
   Trash2,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import type { UserProfile } from '@/types';
 import { VOICE_OPTIONS, TIMEZONE_OPTIONS } from '@/types';
@@ -74,7 +76,7 @@ function handleBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement |
   e.currentTarget.style.boxShadow = 'none';
 }
 
-type TabValue = 'general' | 'voice' | 'notifications' | 'insurance';
+type TabValue = 'general' | 'voice' | 'notifications';
 
 export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) {
   const supabase = createSupabaseBrowserClient();
@@ -118,17 +120,14 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
     (profile?.preferences as Record<string, boolean>)?.notify_scheduled_reminder ?? true
   );
 
-  // Insurance & Medical
-  const [insuranceProvider, setInsuranceProvider] = useState(
-    profile?.insurance_provider || ''
+  // Caller ID verification
+  const [verifiedCallerId, setVerifiedCallerId] = useState<string | null>(
+    (profile as unknown as Record<string, unknown>)?.verified_caller_id as string | null ?? null
   );
-  const [memberId, setMemberId] = useState(profile?.insurance_member_id || '');
-  const [preferredPharmacy, setPreferredPharmacy] = useState(
-    (profile?.preferences as Record<string, string>)?.preferred_pharmacy || ''
-  );
-  const [doctorNotes, setDoctorNotes] = useState(
-    (profile?.preferences as Record<string, string>)?.doctor_notes || ''
-  );
+  const [verifyPhone, setVerifyPhone] = useState('');
+  const [verifyCode, setVerifyCode] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -150,13 +149,9 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
           daily_call_limit: dailyCallLimit,
           notification_email: emailNotifications,
           notification_sms: smsNotifications,
-          insurance_provider: insuranceProvider,
-          insurance_member_id: memberId,
           preferences: {
             ...(profile?.preferences as Record<string, unknown>),
             ai_introduction: aiIntroduction,
-            preferred_pharmacy: preferredPharmacy,
-            doctor_notes: doctorNotes,
             notify_call_completed: notifyCallCompleted,
             notify_task_done: notifyTaskDone,
             notify_scheduled_reminder: notifyScheduledReminder,
@@ -175,6 +170,68 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
     setSaving(false);
   }
 
+  async function startVerification() {
+    if (!verifyPhone) {
+      toast.error('Enter a phone number to verify');
+      return;
+    }
+    setVerifying(true);
+    try {
+      const res = await fetch('/api/caller-id', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: verifyPhone }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVerifyCode(data.validationCode);
+        toast.success(`Twilio is calling you now. Your code is: ${data.validationCode}`);
+      } else {
+        toast.error(data.error || 'Verification failed');
+      }
+    } catch {
+      toast.error('Failed to start verification');
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function confirmVerification() {
+    setConfirming(true);
+    try {
+      const res = await fetch('/api/caller-id', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: verifyPhone }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setVerifiedCallerId(verifyPhone);
+        setVerifyCode(null);
+        setVerifyPhone('');
+        toast.success('Phone number verified! Calls will now show your number.');
+      } else {
+        toast.error(data.error || 'Confirmation failed — make sure you entered the code on the call first.');
+      }
+    } catch {
+      toast.error('Failed to confirm verification');
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  async function removeCallerId() {
+    try {
+      const res = await fetch('/api/caller-id', { method: 'DELETE' });
+      if (res.ok) {
+        setVerifiedCallerId(null);
+        toast.success('Caller ID removed');
+      }
+    } catch {
+      toast.error('Failed to remove caller ID');
+    }
+  }
+
   function handleExportData() {
     toast.info('Data export will be sent to your email shortly.');
   }
@@ -183,7 +240,6 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
     { value: 'general', label: 'General', icon: Settings },
     { value: 'voice', label: 'Voice & AI', icon: Mic },
     { value: 'notifications', label: 'Notifications', icon: Bell },
-    { value: 'insurance', label: 'Insurance', icon: ShieldPlus },
   ];
 
   return (
@@ -230,6 +286,131 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
       {/* ---- GENERAL TAB ---- */}
       {activeTab === 'general' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Caller ID — most prominent */}
+          <div style={{
+            background: '#FFFFFF',
+            border: '1px solid #E3E2DE',
+            borderRadius: 8,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+          }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>
+                <Phone style={{ height: 18, width: 18, color: '#2383E2' }} />
+                Your Phone Number
+              </h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 4 }}>
+                Verify your number so calls show your real caller ID. People you call can call you back directly on this number.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {verifiedCallerId ? (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: 6,
+                  backgroundColor: 'rgba(77,171,154,0.06)',
+                  border: '1px solid rgba(77,171,154,0.2)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <CheckCircle style={{ height: 16, width: 16, color: '#4DAB9A' }} />
+                    <span style={{ fontSize: 14, color: '#37352F', fontWeight: 500 }}>{verifiedCallerId}</span>
+                    <span style={{ fontSize: 12, color: '#4DAB9A' }}>Verified</span>
+                  </div>
+                  <button
+                    onClick={removeCallerId}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '4px 10px',
+                      fontSize: 12,
+                      color: '#EB5757',
+                      background: 'transparent',
+                      border: '1px solid rgba(235,87,87,0.3)',
+                      borderRadius: 6,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <XCircle style={{ height: 12, width: 12 }} />
+                    Remove
+                  </button>
+                </div>
+              ) : verifyCode ? (
+                <div style={{
+                  padding: '14px',
+                  borderRadius: 6,
+                  backgroundColor: 'rgba(35,131,226,0.06)',
+                  border: '1px solid rgba(35,131,226,0.2)',
+                }}>
+                  <p style={{ fontSize: 14, color: '#37352F', margin: '0 0 8px', fontWeight: 500 }}>
+                    Twilio is calling {verifyPhone} now
+                  </p>
+                  <p style={{ fontSize: 13, color: '#787774', margin: '0 0 12px' }}>
+                    When you answer, enter this code: <strong style={{ color: '#2383E2', fontSize: 18, letterSpacing: 2 }}>{verifyCode}</strong>
+                  </p>
+                  <button
+                    onClick={confirmVerification}
+                    disabled={confirming}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 14px',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: '#FFFFFF',
+                      background: '#4DAB9A',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: confirming ? 'not-allowed' : 'pointer',
+                      opacity: confirming ? 0.6 : 1,
+                    }}
+                  >
+                    {confirming && <Loader2 style={{ height: 14, width: 14 }} className="animate-spin" />}
+                    {confirming ? 'Checking...' : "I've entered the code"}
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input
+                    placeholder="+1 (555) 123-4567"
+                    type="tel"
+                    value={verifyPhone}
+                    onChange={(e) => setVerifyPhone(e.target.value)}
+                    style={{ ...inputStyle, flex: 1 }}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                  />
+                  <button
+                    onClick={startVerification}
+                    disabled={verifying}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 14px',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: '#FFFFFF',
+                      background: '#2383E2',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: verifying ? 'not-allowed' : 'pointer',
+                      opacity: verifying ? 0.6 : 1,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {verifying && <Loader2 style={{ height: 14, width: 14 }} className="animate-spin" />}
+                    {verifying ? 'Calling...' : 'Verify Number'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px' }}>
               <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Personal Information</h2>
@@ -571,113 +752,6 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
                 checked={notifyScheduledReminder}
                 onChange={setNotifyScheduledReminder}
               />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 14px',
-                fontSize: 14,
-                fontWeight: 500,
-                color: '#FFFFFF',
-                background: '#2383E2',
-                border: 'none',
-                borderRadius: 8,
-                cursor: saving ? 'not-allowed' : 'pointer',
-                opacity: saving ? 0.6 : 1,
-              }}
-            >
-              {saving ? <Loader2 style={{ height: 16, width: 16 }} className="animate-spin" /> : <Save style={{ height: 16, width: 16 }} />}
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ---- INSURANCE TAB ---- */}
-      {activeTab === 'insurance' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
-            <div style={{ padding: '16px 20px' }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Insurance Information</h2>
-              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
-                This information is used when the AI calls healthcare providers or pharmacies.
-              </p>
-            </div>
-            <div style={{ height: 1, background: '#E3E2DE' }} />
-            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Insurance Provider</label>
-                <input
-                  placeholder="e.g. Blue Cross Blue Shield"
-                  value={insuranceProvider}
-                  onChange={(e) => setInsuranceProvider(e.target.value)}
-                  style={inputStyle}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Member ID</label>
-                <input
-                  placeholder="e.g. XYZ123456789"
-                  value={memberId}
-                  onChange={(e) => setMemberId(e.target.value)}
-                  style={inputStyle}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                />
-                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
-                  Found on the front of your insurance card.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
-            <div style={{ padding: '16px 20px' }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Medical Preferences</h2>
-              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
-                Help the AI make better calls to medical offices and pharmacies.
-              </p>
-            </div>
-            <div style={{ height: 1, background: '#E3E2DE' }} />
-            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Preferred Pharmacy</label>
-                <input
-                  placeholder="e.g. CVS Pharmacy on 5th Ave"
-                  value={preferredPharmacy}
-                  onChange={(e) => setPreferredPharmacy(e.target.value)}
-                  style={inputStyle}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                />
-                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
-                  The AI will mention this pharmacy when calling about prescriptions.
-                </p>
-              </div>
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: '#787774', display: 'block', marginBottom: 6 }}>Doctor Name & Notes</label>
-                <textarea
-                  placeholder="Dr. Smith at City Medical Center. Primary care physician."
-                  value={doctorNotes}
-                  onChange={(e) => setDoctorNotes(e.target.value)}
-                  rows={3}
-                  style={textareaStyle}
-                  onFocus={handleFocus as any}
-                  onBlur={handleBlur as any}
-                />
-                <p style={{ fontSize: 12, color: '#787774', marginTop: 4, opacity: 0.7 }}>
-                  Include your doctor&apos;s name, clinic, and any relevant medical notes.
-                </p>
-              </div>
             </div>
           </div>
 

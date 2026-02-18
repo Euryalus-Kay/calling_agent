@@ -255,15 +255,12 @@ export function ContactsPage({ contacts: initialContacts, userId }: ContactsPage
   }
 
   return (
-    <div style={{ maxWidth: 896, margin: '0 auto', padding: '16px 24px' }}>
+    <div style={{ maxWidth: 896, margin: '0 auto', padding: '16px 0' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: '#37352F', letterSpacing: '-0.01em', margin: 0 }}>Contacts</h1>
-          <p style={{ fontSize: 14, color: '#787774', marginTop: 4 }}>
-            {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
-          </p>
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <p style={{ fontSize: 13, color: '#787774', margin: 0 }}>
+          {contacts.length} {contacts.length === 1 ? 'contact' : 'contacts'}
+        </p>
         <button
           onClick={openAddDialog}
           style={{
@@ -271,7 +268,7 @@ export function ContactsPage({ contacts: initialContacts, userId }: ContactsPage
             alignItems: 'center',
             gap: 6,
             padding: '6px 12px',
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 500,
             color: '#FFFFFF',
             background: '#2383E2',
@@ -280,7 +277,7 @@ export function ContactsPage({ contacts: initialContacts, userId }: ContactsPage
             cursor: 'pointer',
           }}
         >
-          <Plus style={{ height: 16, width: 16 }} />
+          <Plus style={{ height: 14, width: 14 }} />
           Add Contact
         </button>
       </div>

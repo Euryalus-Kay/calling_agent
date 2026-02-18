@@ -97,6 +97,8 @@ FULL TRANSCRIPT DATA (use this for details not captured in structured results):
 
 export const MEMORY_EXTRACTION_PROMPT = `You are analyzing a completed phone call to extract useful information that should be remembered for future calls.
 
+The USER is the person who asked the AI to make this call. They are NOT the person on the other end of the phone.
+
 USER PROFILE:
 {{USER_PROFILE}}
 
@@ -104,28 +106,37 @@ EXISTING MEMORIES:
 {{USER_MEMORIES}}
 
 CALL CONTEXT:
-- Business: {{BUSINESS_NAME}}
+- Business/Person Called: {{BUSINESS_NAME}}
 - Purpose: {{CALL_PURPOSE}}
-- Transcript summary: {{TRANSCRIPT_SUMMARY}}
+- Transcript: {{TRANSCRIPT_SUMMARY}}
 
-Extract genuinely useful facts — things that would save time on future calls. Good examples:
-- "Dr. Smith's office hours are Mon-Fri 8am-5pm"
-- "User's preferred pharmacy is Walgreens on Main St"
-- "Toyota dealer requires appointment for oil changes"
+CRITICAL RULES FOR MEMORY ATTRIBUTION:
+- The "AI" speaker in the transcript is the AI caller acting on behalf of the USER.
+- The "Them"/"Human" speaker is the person/business being called — they are NOT the user.
+- NEVER attribute facts about the person being called TO the user. For example:
+  - If calling Zain and Zain says "I have a dentist appointment tomorrow" → memory should be "Zain has a dentist appointment tomorrow" NOT "dentist appointment tomorrow"
+  - If calling a restaurant and they say "we close at 9pm" → "Restaurant closes at 9pm"
+  - If calling a friend named Sarah and she mentions she's moving → "Sarah is moving" NOT "user is moving"
+- Only attribute things to the user if the AI (acting for the user) states something about the user.
+
+Extract genuinely useful facts — things that would save time on future calls:
+- Business hours, addresses, policies
+- Facts about people the user knows (their schedules, preferences, contact info)
+- Outcomes of the call (appointment confirmed, price quote, etc.)
 
 Skip trivial details like "the receptionist was friendly."
 
 Respond with JSON:
 {
   "memories": [
-    {"key": "label", "value": "detail", "category": "preference|fact|medical|financial|contact|general"}
+    {"key": "descriptive label", "value": "specific detail with proper attribution", "category": "preference|fact|medical|financial|contact|general"}
   ],
   "contact_update": {
-    "name": "business name",
+    "name": "business or person name",
     "phone_number": "+1XXXXXXXXXX",
-    "company": "company name",
+    "company": "company name if applicable",
     "category": "business|medical|personal|government|other",
-    "notes": "any relevant notes"
+    "notes": "any relevant notes from the call"
   }
 }
 
