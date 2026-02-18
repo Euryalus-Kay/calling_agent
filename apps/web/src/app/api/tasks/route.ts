@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { planTask } from '@/lib/ai/planner';
+import { checkAndResetCredits, getTierLimits, calculateCreditsNeeded, hasEnoughCredits } from '@/lib/credits';
+import type { AccountTier } from '@/types';
 
 export async function POST(request: Request) {
   try {
@@ -13,6 +15,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Reset credits if billing period expired
+    await checkAndResetCredits(supabase, user.id);
+
     const body = await request.json().catch(() => null);
     if (!body?.input_text || typeof body.input_text !== 'string' || body.input_text.trim().length === 0) {
       return NextResponse.json({ error: 'Please describe what you need help with.' }, { status: 400 });
@@ -24,28 +29,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Request is too long. Please keep it under 2000 characters.' }, { status: 400 });
     }
 
-    // Check daily task limit
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const { count: todayCount } = await supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', today.toISOString());
-
-    if ((todayCount || 0) >= 50) {
-      return NextResponse.json(
-        { error: 'Daily task limit reached. Try again tomorrow.' },
-        { status: 429 }
-      );
-    }
-
     // Fetch user profile, memories, and contacts in parallel
     const [{ data: profile }, { data: memories }, { data: contacts }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
       supabase.from('user_memory').select('key, value, category').eq('user_id', user.id).order('use_count', { ascending: false }).limit(100),
       supabase.from('contacts').select('name, phone_number, company, category').eq('user_id', user.id).order('is_favorite', { ascending: false }).limit(50),
     ]);
+
+    // Tier-based daily task limit
+    const tier = ((profile as Record<string, unknown>)?.account_tier as AccountTier) || 'free';
+    const limits = getTierLimits(tier);
+
+    if (limits.daily_tasks !== -1) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const { count: todayCount } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', today.toISOString());
+
+      if ((todayCount || 0) >= limits.daily_tasks) {
+        return NextResponse.json(
+          { error: `Daily task limit reached (${limits.daily_tasks} tasks). ${tier === 'free' ? 'Upgrade for more.' : 'Try again tomorrow.'}` },
+          { status: 429 }
+        );
+      }
+    }
 
     // Create task record
     const { data: task, error: taskError } = await supabase
@@ -87,6 +97,34 @@ export async function POST(request: Request) {
         { error: 'I had trouble understanding that request. Please try rephrasing it.' },
         { status: 500 }
       );
+    }
+
+    // If the plan includes calls, check credits and call limits
+    if (plan.plan?.calls?.length) {
+      const creditsNeeded = calculateCreditsNeeded(plan.plan.calls);
+      const creditsRemaining = ((profile as Record<string, unknown>)?.credits_remaining as number) ?? 0;
+
+      // Check max calls per task
+      if (plan.plan.calls.length > limits.max_calls_per_task) {
+        await supabase.from('tasks').update({ status: 'failed' }).eq('id', task.id);
+        return NextResponse.json(
+          { error: `Your plan has ${plan.plan.calls.length} calls, but your ${tier} plan allows up to ${limits.max_calls_per_task} per task. Upgrade for more.` },
+          { status: 402 }
+        );
+      }
+
+      // Check credit balance
+      if (!hasEnoughCredits(tier, creditsRemaining, creditsNeeded)) {
+        await supabase.from('tasks').update({ status: 'failed' }).eq('id', task.id);
+        return NextResponse.json(
+          {
+            error: `You need ${creditsNeeded} credit${creditsNeeded !== 1 ? 's' : ''} but have ${creditsRemaining}. ${tier === 'free' ? 'Upgrade for more credits.' : 'Purchase additional credits.'}`,
+            credits_remaining: creditsRemaining,
+            credits_needed: creditsNeeded,
+          },
+          { status: 402 }
+        );
+      }
     }
 
     // Save any new memories the planner extracted

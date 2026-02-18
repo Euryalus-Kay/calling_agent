@@ -1,3 +1,55 @@
+// ---- Account Tiers & Credits ----
+
+export type AccountTier = 'free' | 'pro' | 'unlimited';
+
+export const TIER_LIMITS = {
+  free: {
+    credits_monthly: 25,
+    daily_tasks: 5,
+    concurrent_calls: 3,
+    max_calls_per_task: 3,
+    max_call_duration_sec: 300, // 5 min
+    history_days: 30,
+    max_memories: 50,
+    max_contacts: 50,
+    summary_model: 'claude-haiku-4-5-20251001' as const,
+  },
+  pro: {
+    credits_monthly: 200,
+    daily_tasks: 50,
+    concurrent_calls: 10,
+    max_calls_per_task: 10,
+    max_call_duration_sec: 600, // 10 min
+    history_days: null as null,
+    max_memories: null as null,
+    max_contacts: null as null,
+    summary_model: 'claude-opus-4-6' as const,
+  },
+  unlimited: {
+    credits_monthly: -1, // unlimited
+    daily_tasks: -1, // unlimited
+    concurrent_calls: 20,
+    max_calls_per_task: 20,
+    max_call_duration_sec: 900, // 15 min
+    history_days: null as null,
+    max_memories: null as null,
+    max_contacts: null as null,
+    summary_model: 'claude-opus-4-6' as const,
+  },
+} as const;
+
+export interface CreditTransaction {
+  id: string;
+  user_id: string;
+  amount: number;
+  type: 'monthly_reset' | 'call_usage' | 'sms_usage' | 'purchase' | 'admin_grant' | 'tier_upgrade';
+  description: string;
+  reference_id: string | null;
+  created_at: string;
+}
+
+// ---- User Profile ----
+
 export interface UserProfile {
   id: string;
   full_name: string | null;
@@ -17,6 +69,14 @@ export interface UserProfile {
   daily_call_limit: number;
   theme: string;
   verified_caller_id: string | null;
+  account_tier: AccountTier;
+  credits_remaining: number;
+  credits_monthly_allowance: number;
+  billing_period_start: string;
+  billing_period_end: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_price_id: string | null;
   created_at: string;
   updated_at: string;
 }

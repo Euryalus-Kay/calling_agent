@@ -12,25 +12,31 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;');
 }
 
-/** Build a dynamic opening greeting based on who we're calling and why */
+/** Build a dynamic opening greeting that immediately states who we are and why we're calling */
 function buildGreeting(callId: string | undefined): string {
-  if (!callId) return 'Hello, this is an AI assistant calling.';
+  if (!callId) return 'Hi, this is an AI agent. Are you available to talk for a moment?';
 
   const session = sessionStore.get(callId);
-  if (!session) return 'Hello, this is an AI assistant calling.';
+  if (!session) return 'Hi, this is an AI agent. Are you available to talk for a moment?';
 
   const profile = session.userProfile as Record<string, unknown>;
   const userName = String(profile?.full_name || '').trim();
   const purpose = session.purpose || '';
+  const businessName = session.businessName || '';
 
-  // Build a short, natural purpose snippet for the greeting
+  // Build a concise, direct greeting — no pleasantries, immediately identify as AI,
+  // state who sent us, and what we need. Then ask if they're available.
   const shortPurpose = purpose.length > 80 ? purpose.slice(0, 77) + '...' : purpose;
 
-  if (userName) {
-    return `Hi there, I'm an AI assistant calling on behalf of ${userName}. I'm reaching out about ${shortPurpose}.`;
+  if (userName && businessName) {
+    return `Hi, is this ${businessName}? This is an AI agent calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Are you available to help with that?`;
   }
 
-  return `Hi there, I'm an AI assistant calling about ${shortPurpose}.`;
+  if (userName) {
+    return `Hi, this is an AI agent calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Are you available to help with that?`;
+  }
+
+  return `Hi, this is an AI agent calling about ${shortPurpose}. Are you available to help with that?`;
 }
 
 export async function twimlRoute(fastify: FastifyInstance) {
@@ -47,8 +53,7 @@ export async function twimlRoute(fastify: FastifyInstance) {
     <ConversationRelay
       url="${wsUrl}"
       ttsProvider="ElevenLabs"
-      voice="JBFqnCBsd6RMkjVDRZzb"
-      ttsModel="eleven_turbo_v2_5"
+      voice="onwK4e9ZLuTAKqWW03F9-turbo_v2_5-1.0_0.45_0.75"
       transcriptionProvider="Deepgram"
       speechModel="nova-3-general"
       welcomeGreeting="${greeting}"

@@ -18,12 +18,16 @@ import {
   Bell,
   Star,
   ClipboardList,
+  Zap,
 } from 'lucide-react';
 import { useState } from 'react';
 
 interface NavSidebarProps {
   userName: string;
   unreadNotifications?: number;
+  creditsRemaining?: number;
+  accountTier?: string;
+  creditsMonthlyAllowance?: number;
 }
 
 const mainNav = [
@@ -39,7 +43,7 @@ const secondaryNav = [
   { href: '/settings', label: 'Settings', icon: Settings, description: 'Preferences' },
 ];
 
-export function NavSidebar({ userName, unreadNotifications = 0 }: NavSidebarProps) {
+export function NavSidebar({ userName, unreadNotifications = 0, creditsRemaining = 0, accountTier = 'free', creditsMonthlyAllowance = 25 }: NavSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
@@ -128,6 +132,39 @@ export function NavSidebar({ userName, unreadNotifications = 0 }: NavSidebarProp
           ))}
         </div>
       </nav>
+
+      {/* Credit pill */}
+      <div className="mx-2 mb-1 px-2.5">
+        <Link
+          href="/settings?tab=billing"
+          onClick={() => setMobileOpen(false)}
+          className="flex items-center gap-2 rounded-[6px] px-2.5 py-[6px] text-[13px] transition-colors duration-100 hover:bg-[#EFEFEF]"
+          style={{ textDecoration: 'none', color: 'inherit' }}
+        >
+          <Zap
+            className="h-[14px] w-[14px] shrink-0"
+            strokeWidth={1.5}
+            style={{
+              color: accountTier === 'unlimited' ? '#6940A5'
+                : creditsRemaining > (creditsMonthlyAllowance * 0.4) ? '#4DAB9A'
+                : creditsRemaining > (creditsMonthlyAllowance * 0.15) ? '#D9730D'
+                : '#EB5757',
+            }}
+          />
+          <span
+            className="font-medium"
+            style={{
+              color: accountTier === 'unlimited' ? '#6940A5'
+                : creditsRemaining > (creditsMonthlyAllowance * 0.4) ? '#4DAB9A'
+                : creditsRemaining > (creditsMonthlyAllowance * 0.15) ? '#D9730D'
+                : '#EB5757',
+            }}
+          >
+            {accountTier === 'unlimited' ? '∞' : creditsRemaining}
+          </span>
+          <span style={{ color: '#B4B4B0', fontSize: 12 }}>credits</span>
+        </Link>
+      </div>
 
       {/* User section */}
       <div

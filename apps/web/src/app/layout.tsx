@@ -14,6 +14,22 @@ export const metadata: Metadata = {
   title: 'CallAgent - AI Phone Assistant',
   description:
     'Your AI assistant that makes phone calls for you. Find information, book appointments, and get things done.',
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || 'https://calling-agent-mocha.vercel.app'
+  ),
+  openGraph: {
+    title: 'CallAgent - AI Phone Assistant',
+    description:
+      'Your AI assistant that makes phone calls for you. Find information, book appointments, and get things done.',
+    type: 'website',
+    siteName: 'CallAgent',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CallAgent - AI Phone Assistant',
+    description:
+      'Your AI assistant that makes phone calls for you.',
+  },
 };
 
 export default function RootLayout({

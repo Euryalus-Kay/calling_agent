@@ -19,6 +19,7 @@ interface CallJobData {
   retryCount?: number;
   previousAttemptNotes?: string;
   callerIdNumber?: string;
+  accountTier?: 'free' | 'pro' | 'unlimited';
 }
 
 let worker: Worker<CallJobData> | null = null;
@@ -45,6 +46,7 @@ export function startWorker() {
         retryCount = 0,
         previousAttemptNotes,
         callerIdNumber,
+        accountTier,
       } = job.data;
 
       console.log(
@@ -80,6 +82,7 @@ export function startWorker() {
         retryCount,
         previousAttemptNotes,
         callerIdNumber,
+        accountTier,
       };
       sessionStore.set(callId, sessionData);
 

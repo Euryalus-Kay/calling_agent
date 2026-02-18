@@ -14,6 +14,8 @@ export type {
   TaskTemplate,
   Notification,
   UserStats,
+  AccountTier,
+  CreditTransaction,
 } from '@calling-agent/shared';
 
 export {
@@ -26,4 +28,5 @@ export {
   VOICE_OPTIONS,
   TIMEZONE_OPTIONS,
   QUEUE_NAMES,
+  TIER_LIMITS,
 } from '@calling-agent/shared';

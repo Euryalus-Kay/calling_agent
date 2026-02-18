@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createSupabaseAdminClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { SUMMARY_SYSTEM_PROMPT } from '@/lib/ai/prompts';
+import { getTierLimits } from '@/lib/credits';
+import type { AccountTier } from '@/types';
 
 const anthropic = new Anthropic();
 
@@ -172,11 +174,20 @@ ${call.duration_seconds ? `Duration: ${Math.floor(call.duration_seconds / 60)}m 
       .replace('{{TRANSCRIPT_DATA}}', transcriptData)
       .replace('{{WEB_CONTEXT}}', webContext);
 
-    // Generate summary with Claude Opus 4
+    // Determine summary model based on user's tier
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('account_tier')
+      .eq('id', user.id)
+      .single();
+    const userTier = ((userProfile as Record<string, unknown>)?.account_tier as AccountTier) || 'free';
+    const tierLimits = getTierLimits(userTier);
+
+    // Generate summary with tier-appropriate model
     let summary: string;
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-opus-4-6',
+        model: tierLimits.summary_model,
         max_tokens: 2048,
         system: systemPrompt,
         messages: [

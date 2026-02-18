@@ -9,6 +9,7 @@ export interface CallSessionData {
   retryCount?: number;
   previousAttemptNotes?: string;
   callerIdNumber?: string;
+  accountTier?: 'free' | 'pro' | 'unlimited';
 }
 
 // In-memory session store for call data.

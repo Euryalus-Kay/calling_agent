@@ -52,4 +52,18 @@ async function start() {
   }
 }
 
+// Graceful shutdown — let active connections drain before exiting
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, async () => {
+    console.log(`Received ${signal}, shutting down gracefully...`);
+    try {
+      await fastify.close();
+      console.log('Server closed');
+    } catch (err) {
+      console.error('Error during shutdown:', err);
+    }
+    process.exit(0);
+  });
+}
+
 start();

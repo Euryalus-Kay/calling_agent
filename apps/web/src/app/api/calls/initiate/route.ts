@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
-import type { CallPlan } from '@/types';
+import { checkAndResetCredits, getTierLimits, calculateCreditsNeeded } from '@/lib/credits';
+import type { CallPlan, AccountTier } from '@/types';
 
 const WORKER_BASE_URL = process.env.WORKER_BASE_URL || 'http://localhost:8080';
 
@@ -23,6 +24,9 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Reset credits if billing period expired
+    await checkAndResetCredits(supabase, user.id);
 
     const body = await request.json().catch(() => null);
     if (!body?.taskId) {
@@ -58,26 +62,55 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No calls in the plan.' }, { status: 400 });
     }
 
-    // Check concurrent call limit (max 10 active)
+    // Fetch user profile for call context and tier info
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profileRow = profile as Record<string, any> | null;
+    const tier = (profileRow?.account_tier as AccountTier) || 'free';
+    const limits = getTierLimits(tier);
+
+    // Check concurrent call limit (tier-based)
     const { count } = await admin
       .from('calls')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .in('status', ['initiating', 'ringing', 'in_progress', 'on_hold', 'navigating_menu', 'transferred']);
 
-    if ((count || 0) >= 10) {
+    if ((count || 0) >= limits.concurrent_calls) {
       return NextResponse.json(
-        { error: 'You have too many active calls right now. Please wait for some to finish.' },
+        { error: `You have too many active calls (limit: ${limits.concurrent_calls}). Please wait for some to finish.` },
         { status: 429 }
       );
     }
 
-    // Fetch user profile for call context
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    // Deduct credits atomically
+    const creditsNeeded = calculateCreditsNeeded(plan.calls);
+    if (creditsNeeded > 0) {
+      const { data: deductResult } = await admin.rpc('deduct_credits', {
+        p_user_id: user.id,
+        p_amount: creditsNeeded,
+        p_type: 'call_usage',
+        p_description: `${plan.calls.length} call${plan.calls.length !== 1 ? 's' : ''} for task`,
+        p_reference_id: taskId,
+      });
+
+      if (deductResult === false) {
+        const creditsRemaining = profileRow?.credits_remaining ?? 0;
+        return NextResponse.json(
+          {
+            error: `Not enough credits. You need ${creditsNeeded} but have ${creditsRemaining}. ${tier === 'free' ? 'Upgrade for more credits.' : 'Purchase additional credits.'}`,
+            credits_remaining: creditsRemaining,
+            credits_needed: creditsNeeded,
+          },
+          { status: 402 }
+        );
+      }
+    }
 
     // Create call records and enqueue via worker HTTP endpoint
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -108,8 +141,6 @@ export async function POST(request: Request) {
       callRecords.push(callRow);
 
       // Route to SMS or call queue based on type
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const profileRow = profile as Record<string, any> | null;
       const isSMS = planned.type === 'sms';
       const enqueueUrl = isSMS
         ? `${WORKER_BASE_URL}/enqueue-sms`
@@ -136,6 +167,7 @@ export async function POST(request: Request) {
             context: planned.context,
             userProfile: profile || {},
             callerIdNumber: profileRow?.verified_caller_id || undefined,
+            accountTier: tier,
           };
 
       const enqueueRes = await fetch(enqueueUrl, {

@@ -26,13 +26,21 @@ function parseParagraphs(raw: string): string[] {
 interface CallSummaryProps {
   taskId: string;
   calls: Call[];
+  existingSummary?: string | null;
 }
 
-export function CallSummary({ taskId, calls }: CallSummaryProps) {
-  const [summary, setSummary] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+export function CallSummary({ taskId, calls, existingSummary }: CallSummaryProps) {
+  const [summary, setSummary] = useState<string | null>(existingSummary || null);
+  const [loading, setLoading] = useState(!existingSummary);
 
   useEffect(() => {
+    // If we already have a summary (from the task), skip the API call
+    if (existingSummary) {
+      setSummary(existingSummary);
+      setLoading(false);
+      return;
+    }
+
     async function fetchSummary() {
       try {
         const res = await fetch(`/api/tasks/${taskId}/summary`, {
@@ -55,7 +63,7 @@ export function CallSummary({ taskId, calls }: CallSummaryProps) {
     if (allDone && calls.length > 0) {
       fetchSummary();
     }
-  }, [taskId, calls]);
+  }, [taskId, calls, existingSummary]);
 
   if (loading) {
     return (

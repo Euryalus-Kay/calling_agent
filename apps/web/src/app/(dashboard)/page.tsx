@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   // Fetch data in parallel
   const [profileRes, tasksRes, callStatsRes, memoryCountRes, contactCountRes] = await Promise.all([
-    supabase.from('profiles').select('full_name, phone_number, verified_caller_id').eq('id', user.id).single(),
+    supabase.from('profiles').select('full_name, phone_number, verified_caller_id, account_tier, credits_remaining, credits_monthly_allowance').eq('id', user.id).single(),
     supabase
       .from('tasks')
       .select('*')
@@ -68,6 +68,11 @@ export default async function DashboardPage() {
         hasVerifiedCallerId: !!profileRes.data?.verified_caller_id,
         memoryCount: memoryCountRes.count || 0,
         contactCount: contactCountRes.count || 0,
+      }}
+      creditData={{
+        creditsRemaining: profileRes.data?.credits_remaining ?? 25,
+        creditsMonthlyAllowance: profileRes.data?.credits_monthly_allowance ?? 25,
+        accountTier: profileRes.data?.account_tier || 'free',
       }}
     />
   );

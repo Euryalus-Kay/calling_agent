@@ -238,9 +238,20 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
         )}
       </div>
 
-      {/* Task description */}
+      {/* Task title — use the AI-formatted plan summary, fall back to raw input */}
+      {task.plan?.summary && (
+        <h2 style={{
+          fontSize: 16,
+          fontWeight: 600,
+          color: '#37352F',
+          marginBottom: 4,
+          lineHeight: 1.4,
+        }}>
+          {task.plan.summary}
+        </h2>
+      )}
       <p style={{
-        fontSize: 14,
+        fontSize: 13,
         color: '#787774',
         marginBottom: 20,
         lineHeight: 1.5,
@@ -303,7 +314,7 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
       )}
 
       {/* Summary when all done */}
-      {stats.allDone && <CallSummary taskId={taskId} calls={calls} />}
+      {stats.allDone && <CallSummary taskId={taskId} calls={calls} existingSummary={task.summary} />}
 
       {/* Post-call follow-up questions to build memory */}
       {stats.allDone && (

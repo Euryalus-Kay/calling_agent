@@ -26,6 +26,7 @@ import {
   AlertCircle,
   PhoneForwarded,
   MessageCircle,
+  Crown,
 } from 'lucide-react';
 import { OnboardingNudge } from './onboarding-nudge';
 import type { Task } from '@/types';
@@ -44,6 +45,11 @@ interface DashboardHomeProps {
     hasVerifiedCallerId: boolean;
     memoryCount: number;
     contactCount: number;
+  };
+  creditData?: {
+    creditsRemaining: number;
+    creditsMonthlyAllowance: number;
+    accountTier: string;
   };
 }
 
@@ -181,7 +187,7 @@ function AnimatedNumber({ value }: { value: number }) {
   );
 }
 
-export function DashboardHome({ userName, recentTasks, stats, nudgeData }: DashboardHomeProps) {
+export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditData }: DashboardHomeProps) {
   const [taskText, setTaskText] = useState('');
   const [loading, setLoading] = useState(false);
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
@@ -257,6 +263,52 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData }: Dashb
           memoryCount={nudgeData.memoryCount}
           contactCount={nudgeData.contactCount}
         />
+      )}
+
+      {/* Upgrade Banner — show when free tier and credits ≤ 5 */}
+      {creditData && creditData.accountTier === 'free' && creditData.creditsRemaining <= 5 && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '14px 20px',
+          borderRadius: 8,
+          background: 'linear-gradient(135deg, rgba(35,131,226,0.06), rgba(105,64,165,0.06))',
+          border: '1px solid rgba(35,131,226,0.15)',
+          marginBottom: 24,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Crown style={{ width: 18, height: 18, color: '#2383E2' }} />
+            <div>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#37352F' }}>
+                {creditData.creditsRemaining === 0 ? "You're out of credits" : `Only ${creditData.creditsRemaining} credit${creditData.creditsRemaining !== 1 ? 's' : ''} left`}
+              </span>
+              <span style={{ fontSize: 13, color: '#787774', marginLeft: 8 }}>
+                Upgrade to Pro for 200 credits/month
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/pricing"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '6px 14px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#FFFFFF',
+              background: '#2383E2',
+              border: 'none',
+              borderRadius: 8,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            View Plans
+            <ArrowUpRight style={{ width: 14, height: 14 }} />
+          </Link>
+        </div>
       )}
 
       {/* Hero: Greeting + Input */}
@@ -644,10 +696,78 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData }: Dashb
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
               gap: 12,
             }}
           >
+            {/* Credits */}
+            {creditData && (
+              <Link href="/settings?tab=billing" style={{ textDecoration: 'none', color: 'inherit' }}>
+                <div
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #E3E2DE',
+                    borderRadius: 8,
+                    padding: 20,
+                    transition: 'box-shadow 0.15s ease',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 32,
+                      height: 32,
+                      borderRadius: 8,
+                      backgroundColor: creditData.accountTier === 'unlimited' ? 'rgba(105,64,165,0.06)' : '#F7F6F3',
+                      marginBottom: 12,
+                    }}
+                  >
+                    <Zap
+                      style={{
+                        width: 18,
+                        height: 18,
+                        strokeWidth: 1.5,
+                        color: creditData.accountTier === 'unlimited' ? '#6940A5'
+                          : creditData.creditsRemaining > (creditData.creditsMonthlyAllowance * 0.4) ? '#4DAB9A'
+                          : creditData.creditsRemaining > (creditData.creditsMonthlyAllowance * 0.15) ? '#D9730D'
+                          : '#EB5757',
+                      }}
+                    />
+                  </div>
+                  <p
+                    style={{
+                      fontSize: 28,
+                      fontWeight: 700,
+                      color: '#37352F',
+                      margin: 0,
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {creditData.accountTier === 'unlimited' ? (
+                      <span style={{ color: '#6940A5' }}>∞</span>
+                    ) : (
+                      <AnimatedNumber value={creditData.creditsRemaining} />
+                    )}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: '#787774',
+                      margin: '6px 0 0 0',
+                      fontWeight: 500,
+                    }}
+                  >
+                    Credits remaining
+                  </p>
+                </div>
+              </Link>
+            )}
+
             {/* Tasks created */}
             <div
               style={{

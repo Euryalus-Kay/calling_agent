@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -24,14 +24,23 @@ import {
   Trash2,
   CheckCircle,
   XCircle,
+  CreditCard,
+  Zap,
+  Crown,
+  ArrowUpRight,
+  ExternalLink,
+  Plus,
 } from 'lucide-react';
-import type { UserProfile } from '@/types';
-import { VOICE_OPTIONS, TIMEZONE_OPTIONS } from '@/types';
+import Link from 'next/link';
+import type { UserProfile, CreditTransaction } from '@/types';
+import { VOICE_OPTIONS, TIMEZONE_OPTIONS, TIER_LIMITS } from '@/types';
 
 interface SettingsPageProps {
   profile: UserProfile | null;
   userId: string;
   userEmail: string;
+  creditTransactions?: CreditTransaction[];
+  stripeCustomerId?: string | null;
 }
 
 const inputStyle: React.CSSProperties = {
@@ -76,9 +85,9 @@ function handleBlur(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement |
   e.currentTarget.style.boxShadow = 'none';
 }
 
-type TabValue = 'general' | 'voice' | 'notifications';
+type TabValue = 'general' | 'voice' | 'notifications' | 'billing';
 
-export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) {
+export function SettingsPage({ profile, userId, userEmail, creditTransactions = [], stripeCustomerId }: SettingsPageProps) {
   const supabase = createSupabaseBrowserClient();
 
   const [activeTab, setActiveTab] = useState<TabValue>('general');
@@ -131,6 +140,11 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
 
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Billing actions
+  const [loadingPortal, setLoadingPortal] = useState(false);
+  const [loadingCheckout, setLoadingCheckout] = useState<string | null>(null);
+  const [loadingCreditPack, setLoadingCreditPack] = useState<string | null>(null);
 
   async function handleSave() {
     setSaving(true);
@@ -187,7 +201,6 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
       const data = await res.json();
       if (res.ok) {
         if (data.alreadyVerified) {
-          // Number was already verified in Twilio — saved directly
           setVerifiedCallerId(numberToVerify);
           setVerifyCode(null);
           toast.success('This number is already verified! Calls will show your number.');
@@ -245,10 +258,103 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
     toast.info('Data export will be sent to your email shortly.');
   }
 
+  // Stripe: open customer portal
+  async function handleManageBilling() {
+    setLoadingPortal(true);
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || 'Failed to open billing portal');
+      }
+    } catch {
+      toast.error('Something went wrong');
+    } finally {
+      setLoadingPortal(false);
+    }
+  }
+
+  // Stripe: checkout for plan upgrade
+  async function handleUpgradeCheckout(plan: 'pro' | 'unlimited') {
+    setLoadingCheckout(plan);
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || 'Failed to start checkout');
+      }
+    } catch {
+      toast.error('Something went wrong');
+    } finally {
+      setLoadingCheckout(null);
+    }
+  }
+
+  // Stripe: buy credit pack
+  async function handleBuyCredits(creditPack: string) {
+    setLoadingCreditPack(creditPack);
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ creditPack }),
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error(data.error || 'Failed to start checkout');
+      }
+    } catch {
+      toast.error('Something went wrong');
+    } finally {
+      setLoadingCreditPack(null);
+    }
+  }
+
+  // Read initial tab from URL query param (for /settings?tab=billing deep link)
+  // Also check for checkout success param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab') as TabValue | null;
+    if (tab && ['general', 'voice', 'notifications', 'billing'].includes(tab)) {
+      setActiveTab(tab);
+    }
+    if (params.get('checkout') === 'success') {
+      toast.success('Payment successful! Your plan has been updated.');
+      // Clean the URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('checkout');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
+
+  const accountTier = (profile as unknown as Record<string, unknown>)?.account_tier as string || 'free';
+  const creditsRemaining = (profile as unknown as Record<string, unknown>)?.credits_remaining as number ?? 25;
+  const creditsMonthly = (profile as unknown as Record<string, unknown>)?.credits_monthly_allowance as number ?? 25;
+  const billingPeriodEnd = (profile as unknown as Record<string, unknown>)?.billing_period_end as string || '';
+
+  const tierConfig = TIER_LIMITS[accountTier as keyof typeof TIER_LIMITS] || TIER_LIMITS.free;
+  const isUnlimited = accountTier === 'unlimited';
+  const creditPercent = isUnlimited ? 100 : creditsMonthly > 0 ? Math.round((creditsRemaining / creditsMonthly) * 100) : 0;
+  const creditBarColor = isUnlimited ? '#6940A5' : creditPercent > 40 ? '#4DAB9A' : creditPercent > 15 ? '#D9730D' : '#EB5757';
+
   const tabs: { value: TabValue; label: string; icon: React.ElementType }[] = [
     { value: 'general', label: 'General', icon: Settings },
     { value: 'voice', label: 'Voice & AI', icon: Mic },
     { value: 'notifications', label: 'Notifications', icon: Bell },
+    { value: 'billing', label: 'Billing', icon: CreditCard },
   ];
 
   return (
@@ -421,7 +527,7 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
                       }}>
                         <AlertTriangle style={{ height: 13, width: 13, color: '#D9730D', flexShrink: 0 }} />
                         <span style={{ fontSize: 12, color: '#D9730D' }}>
-                          Your verified number ({verifiedCallerId}) doesn't match. Verify this number to use it as caller ID.
+                          Your verified number ({verifiedCallerId}) doesn&apos;t match. Verify this number to use it as caller ID.
                         </span>
                       </div>
                     ) : null}
@@ -784,6 +890,327 @@ export function SettingsPage({ profile, userId, userEmail }: SettingsPageProps) 
               {saving ? <Loader2 style={{ height: 16, width: 16 }} className="animate-spin" /> : <Save style={{ height: 16, width: 16 }} />}
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ---- BILLING TAB ---- */}
+      {activeTab === 'billing' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          {/* Current Plan Card */}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Current Plan</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Manage your subscription and credits.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {/* Tier badge + actions */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 8,
+                    backgroundColor: accountTier === 'unlimited' ? 'rgba(105,64,165,0.08)' : accountTier === 'pro' ? 'rgba(35,131,226,0.08)' : 'rgba(77,171,154,0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    {accountTier === 'unlimited' ? (
+                      <Zap style={{ width: 18, height: 18, color: '#6940A5' }} />
+                    ) : accountTier === 'pro' ? (
+                      <Crown style={{ width: 18, height: 18, color: '#2383E2' }} />
+                    ) : (
+                      <Zap style={{ width: 18, height: 18, color: '#4DAB9A' }} />
+                    )}
+                  </div>
+                  <div>
+                    <span style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: '#37352F',
+                      textTransform: 'capitalize',
+                    }}>
+                      {accountTier}
+                    </span>
+                    <span style={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: '#787774',
+                      marginLeft: 8,
+                    }}>
+                      {accountTier === 'free' ? '$0/month' : accountTier === 'pro' ? '$19/month' : '$49/month'}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {/* Manage Billing — shown when user has a Stripe customer */}
+                  {stripeCustomerId && (
+                    <button
+                      onClick={handleManageBilling}
+                      disabled={loadingPortal}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '6px 14px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#37352F',
+                        background: '#FFFFFF',
+                        border: '1px solid #E3E2DE',
+                        borderRadius: 8,
+                        cursor: loadingPortal ? 'not-allowed' : 'pointer',
+                        opacity: loadingPortal ? 0.6 : 1,
+                      }}
+                    >
+                      {loadingPortal ? (
+                        <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" />
+                      ) : (
+                        <ExternalLink style={{ width: 13, height: 13 }} />
+                      )}
+                      {loadingPortal ? 'Opening...' : 'Manage Billing'}
+                    </button>
+                  )}
+                  {/* Upgrade buttons */}
+                  {accountTier === 'free' && (
+                    <button
+                      onClick={() => handleUpgradeCheckout('pro')}
+                      disabled={!!loadingCheckout}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '6px 14px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#FFFFFF',
+                        background: '#2383E2',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: loadingCheckout ? 'not-allowed' : 'pointer',
+                        opacity: loadingCheckout ? 0.7 : 1,
+                      }}
+                    >
+                      {loadingCheckout === 'pro' ? (
+                        <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" />
+                      ) : (
+                        <ArrowUpRight style={{ width: 14, height: 14 }} />
+                      )}
+                      Upgrade to Pro
+                    </button>
+                  )}
+                  {accountTier !== 'unlimited' && (
+                    <button
+                      onClick={() => handleUpgradeCheckout('unlimited')}
+                      disabled={!!loadingCheckout}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '6px 14px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#FFFFFF',
+                        background: accountTier === 'free' ? '#6940A5' : '#2383E2',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: loadingCheckout ? 'not-allowed' : 'pointer',
+                        opacity: loadingCheckout ? 0.7 : 1,
+                      }}
+                    >
+                      {loadingCheckout === 'unlimited' ? (
+                        <Loader2 style={{ width: 13, height: 13 }} className="animate-spin" />
+                      ) : (
+                        <ArrowUpRight style={{ width: 14, height: 14 }} />
+                      )}
+                      Go Unlimited
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Credits bar */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#37352F' }}>
+                    Credits
+                  </span>
+                  <span style={{ fontSize: 13, color: '#787774' }}>
+                    {isUnlimited ? (
+                      <span style={{ color: '#6940A5', fontWeight: 600 }}>Unlimited</span>
+                    ) : (
+                      <>{creditsRemaining} / {creditsMonthly} remaining</>
+                    )}
+                  </span>
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: 8,
+                  backgroundColor: '#F7F6F3',
+                  borderRadius: 4,
+                  overflow: 'hidden',
+                }}>
+                  <div style={{
+                    width: `${creditPercent}%`,
+                    height: '100%',
+                    backgroundColor: creditBarColor,
+                    borderRadius: 4,
+                    transition: 'width 0.3s ease',
+                  }} />
+                </div>
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 6, margin: '6px 0 0' }}>
+                  1 credit = 1 phone call. SMS = 0.5 credits. AI questions are always free.
+                </p>
+              </div>
+
+              {/* Billing period */}
+              {billingPeriodEnd && (
+                <div style={{
+                  padding: '12px 14px',
+                  borderRadius: 8,
+                  backgroundColor: '#F7F6F3',
+                  border: '1px solid #E3E2DE',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: '#787774' }}>Credits reset</span>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: '#37352F' }}>
+                      {new Date(billingPeriodEnd).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Plan limits summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+                <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid #E3E2DE' }}>
+                  <div style={{ fontSize: 11, color: '#787774', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Max call duration</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#37352F' }}>{tierConfig.max_call_duration_sec / 60} min</div>
+                </div>
+                <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid #E3E2DE' }}>
+                  <div style={{ fontSize: 11, color: '#787774', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Concurrent calls</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#37352F' }}>{tierConfig.concurrent_calls}</div>
+                </div>
+                <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid #E3E2DE' }}>
+                  <div style={{ fontSize: 11, color: '#787774', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Daily tasks</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#37352F' }}>{tierConfig.daily_tasks === -1 ? 'Unlimited' : tierConfig.daily_tasks}</div>
+                </div>
+                <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid #E3E2DE' }}>
+                  <div style={{ fontSize: 11, color: '#787774', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Summary model</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: '#37352F' }}>{tierConfig.summary_model.includes('opus') ? 'Opus' : 'Haiku'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Buy Credits — Pro tier only */}
+          {accountTier === 'pro' && (
+            <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+              <div style={{ padding: '16px 20px' }}>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Buy Extra Credits</h2>
+                <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                  Need more credits this month? Purchase a one-time credit pack.
+                </p>
+              </div>
+              <div style={{ height: 1, background: '#E3E2DE' }} />
+              <div style={{ padding: 20, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {[
+                  { key: 'credits_10', credits: 10, price: '$4' },
+                  { key: 'credits_25', credits: 25, price: '$9' },
+                  { key: 'credits_50', credits: 50, price: '$16' },
+                ].map((pack) => (
+                  <button
+                    key={pack.key}
+                    onClick={() => handleBuyCredits(pack.key)}
+                    disabled={!!loadingCreditPack}
+                    style={{
+                      flex: '1 1 140px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '16px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #E3E2DE',
+                      background: '#FFFFFF',
+                      cursor: loadingCreditPack ? 'not-allowed' : 'pointer',
+                      opacity: loadingCreditPack ? 0.6 : 1,
+                      transition: 'border-color 150ms, background 150ms',
+                      fontFamily: 'inherit',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!loadingCreditPack) {
+                        e.currentTarget.style.borderColor = '#2383E2';
+                        e.currentTarget.style.background = 'rgba(35,131,226,0.02)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#E3E2DE';
+                      e.currentTarget.style.background = '#FFFFFF';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {loadingCreditPack === pack.key ? (
+                        <Loader2 style={{ width: 14, height: 14, color: '#2383E2' }} className="animate-spin" />
+                      ) : (
+                        <Plus style={{ width: 14, height: 14, color: '#2383E2' }} />
+                      )}
+                      <span style={{ fontSize: 16, fontWeight: 700, color: '#37352F' }}>{pack.credits}</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#787774' }}>credits</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#2383E2' }}>{pack.price}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Transaction History */}
+          <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+            <div style={{ padding: '16px 20px' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Transaction History</h2>
+              <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
+                Recent credit usage and top-ups.
+              </p>
+            </div>
+            <div style={{ height: 1, background: '#E3E2DE' }} />
+            <div style={{ padding: creditTransactions.length > 0 ? 0 : 20 }}>
+              {creditTransactions.length === 0 ? (
+                <p style={{ fontSize: 13, color: '#787774', textAlign: 'center', padding: '24px 0', margin: 0 }}>
+                  No transactions yet. Credits will be deducted when you make calls.
+                </p>
+              ) : (
+                <div>
+                  {creditTransactions.map((tx, i) => (
+                    <div key={tx.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 20px',
+                      borderBottom: i < creditTransactions.length - 1 ? '1px solid #F7F6F3' : 'none',
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: '#37352F' }}>{tx.description}</div>
+                        <div style={{ fontSize: 11, color: '#B4B4B0', marginTop: 2 }}>
+                          {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                      </div>
+                      <span style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: tx.amount > 0 ? '#4DAB9A' : '#EB5757',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {tx.amount > 0 ? '+' : ''}{tx.amount}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

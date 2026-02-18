@@ -25,6 +25,15 @@ export async function websocketRoute(fastify: FastifyInstance) {
 
       let conversation: ConversationManager | null = null;
       let holdTimer: ReturnType<typeof setInterval> | null = null;
+      let durationWarningTimer: ReturnType<typeof setTimeout> | null = null;
+      let durationLimitTimer: ReturnType<typeof setTimeout> | null = null;
+
+      // Call duration limits per tier (seconds)
+      const TIER_DURATION_LIMITS: Record<string, number> = {
+        free: 300,     // 5 min
+        pro: 600,      // 10 min
+        unlimited: 900, // 15 min
+      };
 
       fastify.log.info(`WebSocket connected for call ${callId}`);
 
@@ -112,6 +121,65 @@ export async function websocketRoute(fastify: FastifyInstance) {
               fastify.log.info(
                 `Conversation initialized for call ${callId} to ${callData.businessName}`
               );
+
+              // Log the welcome greeting as the first transcript entry
+              // The greeting was spoken via TwiML welcomeGreeting before the WS connected
+              const profile = callData.userProfile as Record<string, unknown>;
+              const greetingUserName = String(profile?.full_name || '').trim();
+              const greetingPurpose = callData.purpose || '';
+              const shortPurpose = greetingPurpose.length > 80 ? greetingPurpose.slice(0, 77) + '...' : greetingPurpose;
+
+              let greeting: string;
+              if (greetingUserName && callData.businessName) {
+                greeting = `Hi, is this ${callData.businessName}? This is an AI agent calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Are you available to help with that?`;
+              } else if (greetingUserName) {
+                greeting = `Hi, this is an AI agent calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Are you available to help with that?`;
+              } else {
+                greeting = `Hi, this is an AI agent calling about ${shortPurpose}. Are you available to help with that?`;
+              }
+
+              await supabaseAdmin.from('transcript_entries').insert({
+                call_id: callId,
+                speaker: 'agent',
+                content: greeting,
+              });
+
+              // Start call duration timer based on user's tier
+              const tier = callData.accountTier || 'free';
+              const maxDuration = TIER_DURATION_LIMITS[tier] || 300;
+
+              // At 80% of limit: warn the AI to wrap up
+              const warningAt = Math.floor(maxDuration * 0.8) * 1000;
+              durationWarningTimer = setTimeout(() => {
+                if (conversation) {
+                  const minLeft = Math.ceil((maxDuration - maxDuration * 0.8) / 60);
+                  conversation.injectSystemMessage(
+                    `IMPORTANT: You have approximately ${minLeft} minute${minLeft !== 1 ? 's' : ''} left on this call due to the call duration limit. Please wrap up the conversation quickly and get any final information.`
+                  );
+                  fastify.log.info(`[Duration] Call ${callId}: wrap-up warning sent (${tier} tier, ${maxDuration}s limit)`);
+                }
+              }, warningAt);
+
+              // At 100% of limit: force end the call
+              durationLimitTimer = setTimeout(async () => {
+                fastify.log.info(`[Duration] Call ${callId}: duration limit reached (${maxDuration}s, ${tier} tier). Ending call.`);
+                await logSystemEvent('duration_limit', `Call duration limit reached (${Math.floor(maxDuration / 60)} min ${tier} tier limit)`);
+
+                // Tell the AI to say goodbye
+                socket.send(JSON.stringify({
+                  type: 'text',
+                  token: "I apologize, but I've reached the maximum call duration. Thank you for your time, goodbye!",
+                  last: true,
+                }));
+
+                // End the call after a short delay for TTS
+                setTimeout(() => {
+                  try {
+                    socket.send(JSON.stringify({ type: 'end' }));
+                  } catch { /* socket may already be closed */ }
+                }, 3000);
+              }, maxDuration * 1000);
+
               break;
             }
 
@@ -321,6 +389,8 @@ export async function websocketRoute(fastify: FastifyInstance) {
       socket.on('close', async () => {
         fastify.log.info(`WebSocket closed for call ${callId}`);
         stopHoldTimer();
+        if (durationWarningTimer) { clearTimeout(durationWarningTimer); durationWarningTimer = null; }
+        if (durationLimitTimer) { clearTimeout(durationLimitTimer); durationLimitTimer = null; }
 
         if (callId) {
           // Remove from active conversations
@@ -397,6 +467,8 @@ export async function websocketRoute(fastify: FastifyInstance) {
       socket.on('error', (err) => {
         fastify.log.error(`WebSocket error for call ${callId}: ${err}`);
         stopHoldTimer();
+        if (durationWarningTimer) { clearTimeout(durationWarningTimer); durationWarningTimer = null; }
+        if (durationLimitTimer) { clearTimeout(durationLimitTimer); durationLimitTimer = null; }
       });
     });
   });

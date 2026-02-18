@@ -35,6 +35,7 @@ interface EnqueueCallBody {
   context: string;
   userProfile: Record<string, unknown>;
   callerIdNumber?: string;
+  accountTier?: 'free' | 'pro' | 'unlimited';
 }
 
 export async function enqueueCallRoute(fastify: FastifyInstance) {
@@ -58,6 +59,7 @@ export async function enqueueCallRoute(fastify: FastifyInstance) {
       context,
       userProfile,
       callerIdNumber,
+      accountTier,
     } = request.body;
 
     if (!callId || !taskId || !phoneNumber) {
@@ -77,6 +79,7 @@ export async function enqueueCallRoute(fastify: FastifyInstance) {
         context,
         userProfile,
         callerIdNumber,
+        accountTier,
       });
 
       return reply.send({ success: true, callId });

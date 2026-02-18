@@ -34,7 +34,12 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex h-screen" style={{ backgroundColor: '#FFFFFF' }}>
-      <NavSidebar userName={profile?.full_name || user.email || 'User'} />
+      <NavSidebar
+        userName={profile?.full_name || user.email || 'User'}
+        creditsRemaining={profile?.credits_remaining ?? 25}
+        accountTier={profile?.account_tier || 'free'}
+        creditsMonthlyAllowance={profile?.credits_monthly_allowance ?? 25}
+      />
       <div className="flex flex-1 flex-col overflow-hidden">
         <header
           className="flex h-[45px] shrink-0 items-center justify-end px-4 md:px-6"

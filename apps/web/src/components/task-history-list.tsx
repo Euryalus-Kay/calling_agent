@@ -263,7 +263,7 @@ export function TaskHistoryList({ tasks }: { tasks: Task[] }) {
                   {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <p style={{ fontSize: 14, fontWeight: 500, color: '#37352F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{task.input_text}</p>
+                      <p style={{ fontSize: 14, fontWeight: 500, color: '#37352F', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{task.plan?.summary || task.input_text}</p>
                       {task.is_favorite && (
                         <Star style={{ height: 14, width: 14, color: '#CB912F', fill: '#CB912F', flexShrink: 0 }} />
                       )}
