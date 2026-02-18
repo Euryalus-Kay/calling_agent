@@ -16,6 +16,7 @@ export interface UserProfile {
   ai_voice_preference: string;
   daily_call_limit: number;
   theme: string;
+  verified_caller_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -51,6 +52,12 @@ export interface PlannedCall {
   expected_duration?: string;
 }
 
+export interface MemoryExtraction {
+  memories: Array<{ key: string; value: string; category: string }>;
+  contact_saved: { name: string; phone_number: string; category: string } | null;
+  extracted_at: string;
+}
+
 export interface Call {
   id: string;
   task_id: string;
@@ -70,6 +77,7 @@ export interface Call {
   max_retries: number;
   hold_started_at: string | null;
   status_detail: string | null;
+  memory_extraction: MemoryExtraction | null;
   created_at: string;
   updated_at: string;
 }

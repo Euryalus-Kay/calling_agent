@@ -16,6 +16,8 @@ import {
   Hash,
   Voicemail,
   RotateCw,
+  Brain,
+  BookUser,
 } from 'lucide-react';
 import type { Call } from '@/types';
 
@@ -537,6 +539,65 @@ export function CallCard({ call }: { call: Call }) {
               <p style={{ fontSize: 14, color: '#37352F', margin: 0 }}>{call.error}</p>
             </div>
           )}
+
+          {/* Memory extraction results */}
+          {call.memory_extraction && (
+            (call.memory_extraction.memories?.length > 0 || call.memory_extraction.contact_saved) && (
+            <div style={{
+              borderRadius: 6,
+              backgroundColor: '#F7F6F3',
+              padding: 12,
+            }}>
+              {call.memory_extraction.memories?.length > 0 && (
+                <div style={{ marginBottom: call.memory_extraction.contact_saved ? 10 : 0 }}>
+                  <p style={{
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: '#787774',
+                    marginBottom: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}>
+                    <Brain style={{ height: 14, width: 14, color: '#6940A5' }} />
+                    Remembered {call.memory_extraction.memories.length} thing{call.memory_extraction.memories.length !== 1 ? 's' : ''} from this call
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {call.memory_extraction.memories.map((mem, idx) => (
+                      <span key={idx} style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        fontSize: 11,
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        backgroundColor: 'rgba(105,64,165,0.06)',
+                        color: '#6940A5',
+                        border: '1px solid rgba(105,64,165,0.15)',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {mem.key}: {mem.value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {call.memory_extraction.contact_saved && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  fontSize: 12,
+                  color: '#2383E2',
+                }}>
+                  <BookUser style={{ height: 14, width: 14 }} />
+                  Saved {call.memory_extraction.contact_saved.name} to contacts
+                </div>
+              )}
+            </div>
+          ))}
 
           {/* Duration */}
           {call.duration_seconds != null && call.duration_seconds > 0 && isDone && (

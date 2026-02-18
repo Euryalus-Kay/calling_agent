@@ -1,5 +1,5 @@
 import { Worker, type Job } from 'bullmq';
-import { initiateCall } from '../services/call-manager.js';
+import { initiateCall, releaseNumber } from '../services/call-manager.js';
 import { sessionStore, type CallSessionData } from '../services/session-store.js';
 import { supabaseAdmin } from '../services/supabase.js';
 import { config } from '../config.js';
@@ -18,6 +18,7 @@ interface CallJobData {
   userProfile: Record<string, unknown>;
   retryCount?: number;
   previousAttemptNotes?: string;
+  callerIdNumber?: string;
 }
 
 let worker: Worker<CallJobData> | null = null;
@@ -43,6 +44,7 @@ export function startWorker() {
         userProfile,
         retryCount = 0,
         previousAttemptNotes,
+        callerIdNumber,
       } = job.data;
 
       console.log(
@@ -77,6 +79,7 @@ export function startWorker() {
         userId,
         retryCount,
         previousAttemptNotes,
+        callerIdNumber,
       };
       sessionStore.set(callId, sessionData);
 
@@ -91,7 +94,7 @@ export function startWorker() {
         .eq('id', callId);
 
       try {
-        const callSid = await initiateCall(callId, actualPhoneNumber);
+        const callSid = await initiateCall(callId, actualPhoneNumber, callerIdNumber);
 
         await supabaseAdmin
           .from('calls')
@@ -133,6 +136,7 @@ export function startWorker() {
         }
 
         sessionStore.delete(callId);
+        releaseNumber(callId);
         throw error;
       }
     },

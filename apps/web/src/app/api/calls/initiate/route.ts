@@ -108,6 +108,8 @@ export async function POST(request: Request) {
       callRecords.push(callRow);
 
       // Enqueue via worker HTTP endpoint instead of direct BullMQ
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const profileRow = profile as Record<string, any> | null;
       const enqueueRes = await fetch(`${WORKER_BASE_URL}/enqueue-call`, {
         method: 'POST',
         headers: {
@@ -124,6 +126,7 @@ export async function POST(request: Request) {
           questions: planned.questions,
           context: planned.context,
           userProfile: profile || {},
+          callerIdNumber: profileRow?.verified_caller_id || undefined,
         }),
       });
 

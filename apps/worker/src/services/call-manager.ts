@@ -1,17 +1,22 @@
 import twilio from 'twilio';
 import { config } from '../config.js';
+import { getAvailableNumber, releaseNumber } from './number-pool.js';
 
 const client = twilio(config.TWILIO_ACCOUNT_SID, config.TWILIO_AUTH_TOKEN);
 
 export async function initiateCall(
   callId: string,
-  toNumber: string
+  toNumber: string,
+  fromNumber?: string
 ): Promise<string> {
   const twimlUrl = `https://${config.WS_DOMAIN}/twiml?callId=${encodeURIComponent(callId)}`;
   const statusCallbackUrl = `https://${config.WS_DOMAIN}/status-callback`;
 
+  // Use provided caller ID (verified user number), or get one from the pool
+  const from = fromNumber || getAvailableNumber(callId);
+
   const call = await client.calls.create({
-    from: config.TWILIO_PHONE_NUMBER,
+    from,
     to: toNumber,
     url: twimlUrl,
     statusCallback: statusCallbackUrl,
@@ -23,3 +28,5 @@ export async function initiateCall(
 
   return call.sid;
 }
+
+export { releaseNumber };

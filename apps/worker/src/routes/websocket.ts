@@ -3,6 +3,8 @@ import { ConversationManager } from '../services/conversation.js';
 import { sessionStore } from '../services/session-store.js';
 import { supabaseAdmin } from '../services/supabase.js';
 import { callQueue } from '../services/queue.js';
+import { extractAndSaveMemories } from '../services/memory-extractor.js';
+import { releaseNumber } from '../services/call-manager.js';
 import type { ConversationRelayMessage } from '../types/index.js';
 
 export async function websocketRoute(fastify: FastifyInstance) {
@@ -196,6 +198,7 @@ export async function websocketRoute(fastify: FastifyInstance) {
               // Check if conversation should end
               if (conversation.shouldEnd()) {
                 const result = conversation.getResult();
+                const transcript = conversation.getTranscript();
                 await supabaseAdmin
                   .from('calls')
                   .update({
@@ -207,9 +210,21 @@ export async function websocketRoute(fastify: FastifyInstance) {
                   })
                   .eq('id', callId);
 
+                // Fire-and-forget: extract memories and save contacts from this call
+                const sessionData = sessionStore.get(callId);
+                if (sessionData) {
+                  extractAndSaveMemories({
+                    callId,
+                    userId: sessionData.userId,
+                    businessName: sessionData.businessName,
+                    purpose: sessionData.purpose,
+                    transcript,
+                    userProfile: sessionData.userProfile,
+                  }).catch((err) => fastify.log.error(`Memory extraction error: ${err}`));
+                }
+
                 // Check if retry was requested
                 const retryReason = conversation.retryReason();
-                const sessionData = sessionStore.get(callId);
                 if (retryReason && sessionData && (sessionData.retryCount || 0) < 2) {
                   const retryCount = (sessionData.retryCount || 0) + 1;
                   await supabaseAdmin
@@ -286,6 +301,9 @@ export async function websocketRoute(fastify: FastifyInstance) {
         stopHoldTimer();
 
         if (callId) {
+          // Release the phone number back to the pool
+          releaseNumber(callId);
+
           const sessionData = sessionStore.get(callId);
           sessionStore.delete(callId);
 
@@ -297,6 +315,7 @@ export async function websocketRoute(fastify: FastifyInstance) {
 
           if (call && ['in_progress', 'on_hold', 'transferred', 'navigating_menu'].includes(call.status)) {
             const result = conversation?.getResult();
+            const transcript = conversation?.getTranscript() || '';
             await supabaseAdmin
               .from('calls')
               .update({
@@ -308,6 +327,18 @@ export async function websocketRoute(fastify: FastifyInstance) {
                 status_detail: null,
               })
               .eq('id', callId);
+
+            // Fire-and-forget: extract memories from this call
+            if (sessionData && transcript.length > 50) {
+              extractAndSaveMemories({
+                callId,
+                userId: sessionData.userId,
+                businessName: sessionData.businessName,
+                purpose: sessionData.purpose,
+                transcript,
+                userProfile: sessionData.userProfile,
+              }).catch((err) => fastify.log.error(`Memory extraction error (close): ${err}`));
+            }
 
             // Auto-retry if disconnected while on hold
             if (sessionData && call.status === 'on_hold' && (sessionData.retryCount || 0) < 2) {

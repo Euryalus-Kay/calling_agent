@@ -8,6 +8,7 @@ export interface CallSessionData {
   userId: string;
   retryCount?: number;
   previousAttemptNotes?: string;
+  callerIdNumber?: string;
 }
 
 // In-memory session store for call data.
