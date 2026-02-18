@@ -131,11 +131,11 @@ export async function websocketRoute(fastify: FastifyInstance) {
 
               let greeting: string;
               if (greetingUserName && callData.businessName) {
-                greeting = `Hi, is this ${callData.businessName}? This is an AI agent calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Are you available to help with that?`;
+                greeting = `Hi, is this ${callData.businessName}? Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
               } else if (greetingUserName) {
-                greeting = `Hi, this is an AI agent calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Are you available to help with that?`;
+                greeting = `Hello. Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
               } else {
-                greeting = `Hi, this is an AI agent calling about ${shortPurpose}. Are you available to help with that?`;
+                greeting = `Hello. Just so you know, this is not a real person. I am an AI assistant calling about ${shortPurpose}. Do you have a moment?`;
               }
 
               await supabaseAdmin.from('transcript_entries').insert({

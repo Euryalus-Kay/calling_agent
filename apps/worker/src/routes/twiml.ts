@@ -14,29 +14,29 @@ function escapeXml(s: string): string {
 
 /** Build a dynamic opening greeting that immediately states who we are and why we're calling */
 function buildGreeting(callId: string | undefined): string {
-  if (!callId) return 'Hi, this is an AI agent. Are you available to talk for a moment?';
+  if (!callId) return 'Hello. This is not a real person. This is an AI assistant. Are you available to talk for a moment?';
 
   const session = sessionStore.get(callId);
-  if (!session) return 'Hi, this is an AI agent. Are you available to talk for a moment?';
+  if (!session) return 'Hello. This is not a real person. This is an AI assistant. Are you available to talk for a moment?';
 
   const profile = session.userProfile as Record<string, unknown>;
   const userName = String(profile?.full_name || '').trim();
   const purpose = session.purpose || '';
   const businessName = session.businessName || '';
 
-  // Build a concise, direct greeting — no pleasantries, immediately identify as AI,
+  // Build a concise, direct greeting — immediately and clearly identify as AI,
   // state who sent us, and what we need. Then ask if they're available.
   const shortPurpose = purpose.length > 80 ? purpose.slice(0, 77) + '...' : purpose;
 
   if (userName && businessName) {
-    return `Hi, is this ${businessName}? This is an AI agent calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Are you available to help with that?`;
+    return `Hi, is this ${businessName}? Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
   }
 
   if (userName) {
-    return `Hi, this is an AI agent calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Are you available to help with that?`;
+    return `Hello. Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
   }
 
-  return `Hi, this is an AI agent calling about ${shortPurpose}. Are you available to help with that?`;
+  return `Hello. Just so you know, this is not a real person. I am an AI assistant calling about ${shortPurpose}. Do you have a moment?`;
 }
 
 export async function twimlRoute(fastify: FastifyInstance) {
@@ -47,13 +47,15 @@ export async function twimlRoute(fastify: FastifyInstance) {
 
     // ConversationRelay TwiML connects the call to our WebSocket
     // ElevenLabs for TTS, Deepgram for STT
+    // Pause gives the person time to put the phone to their ear before speaking
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
+  <Pause length="1"/>
   <Connect>
     <ConversationRelay
       url="${wsUrl}"
       ttsProvider="ElevenLabs"
-      voice="onwK4e9ZLuTAKqWW03F9-turbo_v2_5-1.0_0.45_0.75"
+      voice="JBFqnCBsd6RMkjVDRZzb"
       transcriptionProvider="Deepgram"
       speechModel="nova-3-general"
       welcomeGreeting="${greeting}"
