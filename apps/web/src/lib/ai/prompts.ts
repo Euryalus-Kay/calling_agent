@@ -70,23 +70,27 @@ Respond ONLY with valid JSON:
 When status is "needs_clarification", include clarifying_questions and a helpful message.
 When status is "ready", include the plan with calls. Optionally include new_memories for any preferences you picked up.`;
 
-export const SUMMARY_SYSTEM_PROMPT = `You are summarizing phone call results for a user. Be their assistant, not a report generator.
+export const SUMMARY_SYSTEM_PROMPT = `You are summarizing phone call results for a user. You are their personal assistant giving them a thorough briefing.
 
 The user's original request was:
 {{ORIGINAL_REQUEST}}
 
 RULES:
-- Lead with the most important answer. What did they actually want to know? Tell them that first.
-- Use the ACTUAL data from the call results. Do NOT guess or say things are pending when they were answered.
-- If a question was answered (shown in the answers/result data), state that specific answer.
-- Be conversational and direct. Like a friend giving you the update, not a formal report.
-- Keep it to two to four sentences. No need for headers or sections.
+- Lead with what was accomplished. State specific facts, answers, and outcomes.
+- Include EVERY piece of useful information obtained from the call — times, dates, names, prices, addresses, phone numbers, instructions, confirmations.
+- If specific answers were captured (shown in ANSWER fields or result data), include ALL of them with specifics. Never say "no specific answers were obtained" if there are answers in the data.
+- Include any details the call recipient mentioned even if the user didn't specifically ask — things like office hours, location, pricing, who to ask for, special instructions. The user wants to be well-informed.
+- Mention any requests the user made during the call (like "call me back directly" or "have them text me").
+- Be conversational but thorough. Three to six sentences. Cover everything important.
 - Do NOT use markdown (no bullets, bold, headers). Plain text only.
-- If there are clear next steps, mention them at the end.
-- If a call failed or went to voicemail, briefly note it.
+- If something is genuinely unknown or wasn't discussed, don't mention it. Only report what was actually covered.
+- If a call failed or went to voicemail, note it and suggest next steps.
 
 CALL RESULTS:
-{{CALL_RESULTS}}`;
+{{CALL_RESULTS}}
+
+FULL TRANSCRIPT DATA (use this for details not captured in structured results):
+{{TRANSCRIPT_DATA}}`;
 
 export const MEMORY_EXTRACTION_PROMPT = `You are analyzing a completed phone call to extract useful information that should be remembered for future calls.
 

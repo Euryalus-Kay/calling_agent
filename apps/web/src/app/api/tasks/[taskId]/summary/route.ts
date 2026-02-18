@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseAdminClient } from '@/lib/supabase/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { SUMMARY_SYSTEM_PROMPT } from '@/lib/ai/prompts';
 
@@ -70,6 +71,27 @@ export async function POST(
       );
     }
 
+    // Fetch transcripts for all calls to give the summary model full context
+    const admin = createSupabaseAdminClient();
+    const callIds = calls.map((c) => c.id);
+    const { data: transcripts } = await admin
+      .from('call_transcripts')
+      .select('call_id, speaker, content, event_type')
+      .in('call_id', callIds)
+      .order('created_at', { ascending: true });
+
+    // Build transcript text grouped by call
+    const transcriptsByCall: Record<string, string[]> = {};
+    if (transcripts) {
+      for (const t of transcripts as { call_id: string; speaker: string; content: string; event_type: string | null }[]) {
+        if (!transcriptsByCall[t.call_id]) transcriptsByCall[t.call_id] = [];
+        if (t.event_type === 'speech' || t.event_type === 'answer_captured' || !t.event_type) {
+          const label = t.speaker === 'agent' ? 'AI' : t.speaker === 'human' ? 'Them' : 'System';
+          transcriptsByCall[t.call_id].push(`${label}: ${t.content}`);
+        }
+      }
+    }
+
     // Build call results text
     const callResults = calls
       .map((call, i) => {
@@ -84,22 +106,31 @@ ${call.duration_seconds ? `Duration: ${Math.floor(call.duration_seconds / 60)}m 
       })
       .join('\n\n---\n\n');
 
-    const systemPrompt = SUMMARY_SYSTEM_PROMPT.replace(
-      '{{ORIGINAL_REQUEST}}',
-      task.input_text
-    ).replace('{{CALL_RESULTS}}', callResults);
+    // Build full transcript data
+    const transcriptData = calls
+      .map((call, i) => {
+        const lines = transcriptsByCall[call.id];
+        if (!lines || lines.length === 0) return `Call ${i + 1} (${call.business_name}): No transcript available`;
+        return `Call ${i + 1} (${call.business_name}):\n${lines.join('\n')}`;
+      })
+      .join('\n\n---\n\n');
 
-    // Generate summary with Claude Opus
+    const systemPrompt = SUMMARY_SYSTEM_PROMPT
+      .replace('{{ORIGINAL_REQUEST}}', task.input_text)
+      .replace('{{CALL_RESULTS}}', callResults)
+      .replace('{{TRANSCRIPT_DATA}}', transcriptData);
+
+    // Generate summary with Claude Opus 4
     let summary: string;
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-opus-4-20250514',
+        model: 'claude-opus-4-6',
         max_tokens: 2048,
         system: systemPrompt,
         messages: [
           {
             role: 'user',
-            content: 'Please synthesize the results into a clear summary.',
+            content: 'Synthesize a thorough, conversational summary of everything that happened and was learned from these calls. Include all specific details.',
           },
         ],
       });
@@ -117,7 +148,7 @@ ${call.duration_seconds ? `Duration: ${Math.floor(call.duration_seconds / 60)}m 
         failedCalls.length > 0 ? ` ${failedCalls.length} call(s) were unsuccessful.` : ''
       }${
         successfulCalls.map((c) => c.result_summary).filter(Boolean).length > 0
-          ? '\n\n' + successfulCalls.map((c, i) => `${c.business_name}: ${c.result_summary}`).join('\n')
+          ? '\n\n' + successfulCalls.map((c) => `${c.business_name}: ${c.result_summary}`).join('\n')
           : ''
       }`;
     }
@@ -130,7 +161,6 @@ ${call.duration_seconds ? `Duration: ${Math.floor(call.duration_seconds / 60)}m 
 
     if (updateError) {
       console.error('[Summary] Failed to save summary:', updateError);
-      // Still return the summary even if save fails
     }
 
     return NextResponse.json({ summary });

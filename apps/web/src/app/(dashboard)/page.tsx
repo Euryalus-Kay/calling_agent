@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { DashboardHome } from '@/components/dashboard-home';
 import type { Task } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
   const {

@@ -2,6 +2,8 @@ import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { KnowledgePage } from '@/components/knowledge-page';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Knowledge() {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
