@@ -96,7 +96,7 @@ export function startWorker() {
         })
         .eq('id', callId);
 
-      console.log(`[Worker] Call ${callId}: callerIdNumber=${callerIdNumber || 'NOT SET'}, dialing ${actualPhoneNumber}`);
+      console.log(`[Worker] Call ${callId}: callerIdNumber=${JSON.stringify(callerIdNumber)}, type=${typeof callerIdNumber}, dialing ${actualPhoneNumber}`);
 
       try {
         const callSid = await initiateCall(callId, actualPhoneNumber, callerIdNumber);

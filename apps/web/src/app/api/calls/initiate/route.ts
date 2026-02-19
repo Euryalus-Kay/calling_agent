@@ -75,9 +75,9 @@ export async function POST(request: Request) {
     const tier = (profileRow?.account_tier as AccountTier) || 'free';
     const limits = getTierLimits(tier);
 
-    // Debug: log the verified caller ID
+    // Debug: log the verified caller ID — log the raw value and type
     const verifiedCallerId = profileRow?.verified_caller_id;
-    console.log(`[Initiate] User ${user.id} verified_caller_id: ${verifiedCallerId || 'NOT SET'}, tier: ${tier}`);
+    console.log(`[Initiate] User ${user.id} verified_caller_id: raw=${JSON.stringify(verifiedCallerId)}, type=${typeof verifiedCallerId}, tier: ${tier}`);
 
     // Check concurrent call limit (tier-based)
     const { count } = await admin
@@ -157,6 +157,9 @@ export async function POST(request: Request) {
         ? `${WORKER_BASE_URL}/enqueue-sms`
         : `${WORKER_BASE_URL}/enqueue-call`;
 
+      // Use null instead of undefined so callerIdNumber survives JSON.stringify
+      const callerIdToSend = verifiedCallerId || null;
+
       const enqueueBody = isSMS
         ? {
             callId: callRow.id,
@@ -165,7 +168,7 @@ export async function POST(request: Request) {
             businessName: planned.business_name,
             phoneNumber: planned.phone_number,
             smsBody: planned.sms_body || planned.purpose,
-            callerIdNumber: profileRow?.verified_caller_id || undefined,
+            callerIdNumber: callerIdToSend,
           }
         : {
             callId: callRow.id,
@@ -177,9 +180,11 @@ export async function POST(request: Request) {
             questions: planned.questions,
             context: planned.context,
             userProfile: profile || {},
-            callerIdNumber: profileRow?.verified_caller_id || undefined,
+            callerIdNumber: callerIdToSend,
             accountTier: tier,
           };
+
+      console.log(`[Initiate] Enqueuing ${isSMS ? 'SMS' : 'call'} for ${planned.business_name}: callerIdNumber=${JSON.stringify(callerIdToSend)}`);
 
       const enqueueRes = await fetch(enqueueUrl, {
         method: 'POST',

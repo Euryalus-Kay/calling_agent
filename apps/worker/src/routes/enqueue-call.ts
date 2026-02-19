@@ -66,6 +66,13 @@ export async function enqueueCallRoute(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Missing required fields' });
     }
 
+    // Ensure callerIdNumber is a proper string or undefined (not null)
+    const resolvedCallerId = (typeof callerIdNumber === 'string' && callerIdNumber.length > 0)
+      ? callerIdNumber
+      : undefined;
+
+    console.log(`[EnqueueCall] Call ${callId}: callerIdNumber received=${JSON.stringify(callerIdNumber)}, resolved=${JSON.stringify(resolvedCallerId)}`);
+
     try {
       const queue = getQueue();
       await queue.add('make-call', {
@@ -78,7 +85,7 @@ export async function enqueueCallRoute(fastify: FastifyInstance) {
         questions,
         context,
         userProfile,
-        callerIdNumber,
+        callerIdNumber: resolvedCallerId,
         accountTier,
       });
 

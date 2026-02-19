@@ -13,8 +13,8 @@ export async function initiateCall(
   const statusCallbackUrl = `https://${config.WS_DOMAIN}/status-callback`;
 
   // Use provided caller ID (verified user number), or get one from the pool
-  const from = fromNumber || getAvailableNumber(callId);
-  console.log(`[CallManager] Call ${callId}: fromNumber=${fromNumber || 'none'}, using from=${from}`);
+  const from = (fromNumber && fromNumber.length > 0) ? fromNumber : getAvailableNumber(callId);
+  console.log(`[CallManager] Call ${callId}: fromNumber=${JSON.stringify(fromNumber)}, resolved from=${from}`);
 
   const call = await client.calls.create({
     from,

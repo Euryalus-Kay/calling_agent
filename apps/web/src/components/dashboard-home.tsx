@@ -191,8 +191,14 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
   const [taskText, setTaskText] = useState('');
   const [loading, setLoading] = useState(false);
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
+  const [greeting, setGreeting] = useState('Welcome');
   const router = useRouter();
   const firstName = userName.split(' ')[0] || 'there';
+
+  // Set greeting on client only to avoid SSR hydration mismatch
+  useEffect(() => {
+    setGreeting(getGreeting());
+  }, []);
 
   const successRate =
     stats.total_calls > 0
@@ -323,7 +329,7 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
               letterSpacing: '0.02em',
             }}
           >
-            {getGreeting()}
+            {greeting}
           </p>
           <h1
             style={{
