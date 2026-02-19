@@ -53,7 +53,7 @@ export async function initiateCall(
     statusCallback: statusCallbackUrl,
     statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
     statusCallbackMethod: 'POST',
-    machineDetection: 'DetectMessageEnd',
+    machineDetection: 'Enable',
     timeout: 30,
   });
 

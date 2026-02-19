@@ -12,31 +12,73 @@ function escapeXml(s: string): string {
     .replace(/'/g, '&apos;');
 }
 
-/** Build a dynamic opening greeting that immediately states who we are and why we're calling */
+/**
+ * Build a short, natural greeting that starts immediately on pickup.
+ * Keep it concise: identify as AI, say who sent us, state what we need.
+ * Never use raw business_name if it's generic (e.g. "Personal Contact").
+ */
 function buildGreeting(callId: string | undefined): string {
-  if (!callId) return 'Hello. This is not a real person. This is an AI assistant. Are you available to talk for a moment?';
+  if (!callId) return 'Hi, this is an AI assistant. Do you have a moment?';
 
   const session = sessionStore.get(callId);
-  if (!session) return 'Hello. This is not a real person. This is an AI assistant. Are you available to talk for a moment?';
+  if (!session) return 'Hi, this is an AI assistant. Do you have a moment?';
 
   const profile = session.userProfile as Record<string, unknown>;
   const userName = String(profile?.full_name || '').trim();
   const purpose = session.purpose || '';
-  const businessName = session.businessName || '';
 
-  // Build a concise, direct greeting — immediately and clearly identify as AI,
-  // state who sent us, and what we need. Then ask if they're available.
-  const shortPurpose = purpose.length > 80 ? purpose.slice(0, 77) + '...' : purpose;
+  // Extract a clean, short purpose — take the core action, skip filler
+  const shortPurpose = cleanPurpose(purpose);
 
-  if (userName && businessName) {
-    return `Hello. Hi, is this ${businessName}? Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
+  if (userName && shortPurpose) {
+    return `Hi, this is an AI agent calling on behalf of ${userName}. ${shortPurpose}`;
   }
 
   if (userName) {
-    return `Hello. Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
+    return `Hi, this is an AI agent calling on behalf of ${userName}. Do you have a moment?`;
   }
 
-  return `Hello. Just so you know, this is not a real person. I am an AI assistant calling about ${shortPurpose}. Do you have a moment?`;
+  if (shortPurpose) {
+    return `Hi, this is an AI agent. ${shortPurpose}`;
+  }
+
+  return 'Hi, this is an AI agent. Do you have a moment?';
+}
+
+/**
+ * Clean up the raw purpose string into a short, natural sentence.
+ * Strips filler like "Call on behalf of X and...", keeps the core ask.
+ */
+function cleanPurpose(raw: string): string {
+  if (!raw) return '';
+
+  // Remove common filler patterns from AI planner output
+  let cleaned = raw
+    // "Call on behalf of X and ask ..." → "ask ..."
+    .replace(/^call\s+(on behalf of\s+\w+\s+and\s+)?/i, '')
+    // "ask how their day was — have a friendly, casual c..." → "ask how their day was"
+    .replace(/\s*[—–-]\s+have\s+a\s+.*/i, '')
+    // Remove trailing ellipsis from truncation
+    .replace(/\.{2,}$/, '')
+    .trim();
+
+  // Capitalize first letter
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+
+  // If it doesn't end with a question mark or period, add a period
+  if (cleaned && !/[.?!]$/.test(cleaned)) {
+    cleaned += '.';
+  }
+
+  // Cap at ~60 chars for spoken clarity
+  if (cleaned.length > 60) {
+    const cut = cleaned.lastIndexOf(' ', 57);
+    cleaned = cleaned.slice(0, cut > 20 ? cut : 57) + '.';
+  }
+
+  return cleaned;
 }
 
 export async function twimlRoute(fastify: FastifyInstance) {
