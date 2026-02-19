@@ -64,18 +64,10 @@ export function getTierLimits(tier: AccountTier) {
 
 /**
  * Calculate credits needed for a set of planned calls.
- * Calls = 1 credit each, SMS = 0.5 credits each (rounded up total).
+ * 1 credit per call.
  */
 export function calculateCreditsNeeded(calls: PlannedCall[]): number {
-  let total = 0;
-  for (const call of calls) {
-    if (call.type === 'sms') {
-      total += 0.5;
-    } else {
-      total += 1;
-    }
-  }
-  return Math.ceil(total);
+  return calls.length;
 }
 
 /**

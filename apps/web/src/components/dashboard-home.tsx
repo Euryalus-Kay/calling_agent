@@ -1452,7 +1452,7 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
                       { icon: Phone, text: 'Calls show your real number — people can call you back' },
                       { icon: Clock, text: 'Wait on hold so you don\'t have to' },
                       { icon: PhoneCall, text: 'Make up to 5 calls at the same time' },
-                      { icon: MessageCircle, text: 'Send texts via SMS too' },
+                      { icon: MessageCircle, text: 'Handles hold times and phone menus for you' },
                       { icon: Sparkles, text: 'Navigate menus, adapt to any situation' },
                       { icon: CheckCircle, text: 'Auto-retry if a line is busy' },
                     ].map((item) => (

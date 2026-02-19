@@ -58,7 +58,6 @@ const COMPARISON: ComparisonCategory[] = [
     rows: [
       { label: 'AI questions & planning', free: 'Unlimited', pro: 'Unlimited', unlimited: 'Unlimited' },
       { label: 'Daily tasks', free: '5', pro: '50', unlimited: 'Unlimited', bestCol: 'unlimited' },
-      { label: 'SMS messaging', free: true, pro: true, unlimited: true },
     ],
   },
   {
@@ -83,7 +82,7 @@ const COMPARISON: ComparisonCategory[] = [
 const FAQ_ITEMS = [
   {
     q: 'What counts as a credit?',
-    a: 'Each phone call uses 1 credit, regardless of duration. Each SMS message uses 0.5 credits. AI questions, task planning, and all other features are completely free and unlimited.',
+    a: 'Each phone call uses 1 credit, regardless of duration. AI questions, task planning, and all other features are completely free and unlimited.',
   },
   {
     q: 'Do unused credits roll over?',
@@ -95,7 +94,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What happens when I run out of credits?',
-    a: 'You won\'t be able to make calls or send SMS until your credits reset next month. Pro users can buy extra credit packs. Or you can upgrade to Unlimited for unrestricted access.',
+    a: 'You won\'t be able to make calls until your credits reset next month. Pro users can buy extra credit packs. Or you can upgrade to Unlimited for unrestricted access.',
   },
 ];
 
@@ -393,7 +392,7 @@ export function PricingPage({ currentTier, isLoggedIn, creditsRemaining }: Prici
           Simple, transparent pricing
         </h1>
         <p style={{ fontSize: 16, color: C.secondary, margin: 0, maxWidth: 520, marginInline: 'auto', lineHeight: 1.6 }}>
-          Every plan includes unlimited AI questions and planning. Credits are only used for phone calls and texts.
+          Every plan includes unlimited AI questions and planning. Credits are only used for phone calls.
         </p>
         {isLoggedIn && creditsRemaining !== undefined && (
           <p style={{ fontSize: 14, color: C.blue, margin: '12px 0 0', fontWeight: 500 }}>
@@ -569,7 +568,7 @@ export function PricingPage({ currentTier, isLoggedIn, creditsRemaining }: Prici
       {/* Credit note */}
       <div style={{ textAlign: 'center', padding: 20, borderRadius: 8, backgroundColor: C.bg }}>
         <p style={{ fontSize: 13, color: C.secondary, margin: 0, lineHeight: 1.6 }}>
-          1 credit = 1 phone call &middot; 1 SMS = 0.5 credits &middot; Credits reset monthly &middot; AI planning is always free
+          1 credit = 1 phone call &middot; Credits reset monthly &middot; AI planning is always free
         </p>
       </div>
     </div>

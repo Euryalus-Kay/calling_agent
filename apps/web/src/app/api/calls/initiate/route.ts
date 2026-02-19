@@ -33,8 +33,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing task ID' }, { status: 400 });
     }
 
-    const { taskId, smsEdits } = body;
-    // smsEdits is a Record<number, string> of index→edited sms body from frontend
+    const { taskId } = body;
 
     // Use admin client for all DB ops (bypasses RLS - calls table has no INSERT policy)
     const admin = getAdminClient();
@@ -123,10 +122,12 @@ export async function POST(request: Request) {
     for (let planIdx = 0; planIdx < plan.calls.length; planIdx++) {
       const planned = plan.calls[planIdx];
 
-      // Apply any SMS body edits from the frontend
-      if (planned.type === 'sms' && smsEdits && smsEdits[String(planIdx)]) {
-        planned.sms_body = smsEdits[String(planIdx)];
+      // Skip SMS — not supported (A2P 10DLC required)
+      if (planned.type === 'sms') {
+        console.log(`[Initiate] Skipping SMS to ${planned.business_name} — SMS disabled`);
+        continue;
       }
+
       const { data: call, error: callError } = await admin
         .from('calls')
         .insert({
@@ -151,42 +152,26 @@ export async function POST(request: Request) {
       const callRow = call as Record<string, any>;
       callRecords.push(callRow);
 
-      // Route to SMS or call queue based on type
-      const isSMS = planned.type === 'sms';
-      const enqueueUrl = isSMS
-        ? `${WORKER_BASE_URL}/enqueue-sms`
-        : `${WORKER_BASE_URL}/enqueue-call`;
-
       // Use null instead of undefined so callerIdNumber survives JSON.stringify
       const callerIdToSend = verifiedCallerId || null;
 
-      const enqueueBody = isSMS
-        ? {
-            callId: callRow.id,
-            taskId,
-            userId: user.id,
-            businessName: planned.business_name,
-            phoneNumber: planned.phone_number,
-            smsBody: planned.sms_body || planned.purpose,
-            callerIdNumber: callerIdToSend,
-          }
-        : {
-            callId: callRow.id,
-            taskId,
-            userId: user.id,
-            businessName: planned.business_name,
-            phoneNumber: planned.phone_number,
-            purpose: planned.purpose,
-            questions: planned.questions,
-            context: planned.context,
-            userProfile: profile || {},
-            callerIdNumber: callerIdToSend,
-            accountTier: tier,
-          };
+      const enqueueBody = {
+        callId: callRow.id,
+        taskId,
+        userId: user.id,
+        businessName: planned.business_name,
+        phoneNumber: planned.phone_number,
+        purpose: planned.purpose,
+        questions: planned.questions,
+        context: planned.context,
+        userProfile: profile || {},
+        callerIdNumber: callerIdToSend,
+        accountTier: tier,
+      };
 
-      console.log(`[Initiate] Enqueuing ${isSMS ? 'SMS' : 'call'} for ${planned.business_name}: callerIdNumber=${JSON.stringify(callerIdToSend)}`);
+      console.log(`[Initiate] Enqueuing call for ${planned.business_name}: callerIdNumber=${JSON.stringify(callerIdToSend)}`);
 
-      const enqueueRes = await fetch(enqueueUrl, {
+      const enqueueRes = await fetch(`${WORKER_BASE_URL}/enqueue-call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -196,7 +181,7 @@ export async function POST(request: Request) {
       });
 
       if (!enqueueRes.ok) {
-        console.error(`Failed to enqueue ${isSMS ? 'SMS' : 'call'} via worker:`, await enqueueRes.text());
+        console.error(`Failed to enqueue call via worker:`, await enqueueRes.text());
       }
     }
 

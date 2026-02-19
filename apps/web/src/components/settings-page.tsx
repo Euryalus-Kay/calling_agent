@@ -1079,7 +1079,7 @@ export function SettingsPage({ profile, userId, userEmail, creditTransactions = 
                   }} />
                 </div>
                 <p style={{ fontSize: 12, color: '#787774', marginTop: 6, margin: '6px 0 0' }}>
-                  1 credit = 1 phone call. SMS = 0.5 credits. AI questions are always free.
+                  1 credit = 1 phone call. AI questions are always free.
                 </p>
               </div>
 
