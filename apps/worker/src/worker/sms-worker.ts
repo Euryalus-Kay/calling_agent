@@ -1,5 +1,4 @@
 import { Worker, Queue } from 'bullmq';
-import IORedis from 'ioredis';
 import { config } from '../config.js';
 import { supabaseAdmin } from '../services/supabase.js';
 import { sendSMS } from '../services/sms-manager.js';
@@ -15,7 +14,10 @@ interface SMSJobData {
   callerIdNumber?: string;
 }
 
-const connection = new IORedis(config.REDIS_URL, { maxRetriesPerRequest: null });
+const connection = {
+  url: config.REDIS_URL,
+  maxRetriesPerRequest: null as null,
+};
 
 export const smsQueue = new Queue('sms-processing', { connection });
 
