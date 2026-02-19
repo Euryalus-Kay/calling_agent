@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Send,
   Phone,
@@ -17,6 +18,7 @@ import {
   Sparkles,
   AlertCircle,
   Pencil,
+  Zap,
 } from 'lucide-react';
 import type { ChatMessage, CallPlan, PlannedCall } from '@/types';
 
@@ -792,11 +794,18 @@ function EmptyState() {
 // Main component
 // ---------------------------------------------------------------------------
 
+interface CreditData {
+  creditsRemaining: number;
+  creditsMonthlyAllowance: number;
+  accountTier: string;
+}
+
 interface PlanningChatProps {
   taskId: string;
   initialMessages: ChatMessage[];
   plan: CallPlan | null;
   status: string;
+  creditData?: CreditData;
 }
 
 export function PlanningChat({
@@ -804,6 +813,7 @@ export function PlanningChat({
   initialMessages,
   plan,
   status,
+  creditData,
 }: PlanningChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [input, setInput] = useState('');
@@ -1630,6 +1640,58 @@ export function PlanningChat({
                   })}
                 </>
               )}
+
+              {/* Credit warning before starting calls */}
+              {activeCalls.length > 0 && creditData && creditData.accountTier !== 'unlimited' && (() => {
+                const callCredits = activeCalls.filter(c => c.type !== 'sms').length;
+                const smsCredits = activeCalls.filter(c => c.type === 'sms').length * 0.5;
+                const totalCost = callCredits + smsCredits;
+                const remaining = creditData.creditsRemaining;
+                const afterCalls = remaining - totalCost;
+                const notEnough = afterCalls < 0;
+                const isLow = afterCalls >= 0 && afterCalls < 5;
+
+                if (notEnough) return (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(235,87,87,0.06)',
+                    border: '1px solid rgba(235,87,87,0.15)',
+                    marginTop: 12,
+                  }}>
+                    <Zap style={{ width: 14, height: 14, color: '#EB5757', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: '#EB5757', fontWeight: 500, flex: 1 }}>
+                      Not enough credits &mdash; {totalCost} needed, {remaining} available
+                    </span>
+                    <Link href="/pricing" style={{
+                      fontSize: 13, fontWeight: 600, color: '#2383E2', textDecoration: 'none', whiteSpace: 'nowrap',
+                    }}>
+                      View Plans
+                    </Link>
+                  </div>
+                );
+                if (isLow) return (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    backgroundColor: 'rgba(217,115,13,0.06)',
+                    border: '1px solid rgba(217,115,13,0.15)',
+                    marginTop: 12,
+                  }}>
+                    <Zap style={{ width: 14, height: 14, color: '#D9730D', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: '#D9730D', fontWeight: 500 }}>
+                      After these calls, you&apos;ll have {afterCalls} credit{afterCalls !== 1 ? 's' : ''} left
+                    </span>
+                  </div>
+                );
+                return null;
+              })()}
 
               {/* Start Calls button */}
               {activeCalls.length > 0 && (

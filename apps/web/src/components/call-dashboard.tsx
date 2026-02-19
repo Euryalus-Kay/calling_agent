@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRealtimeCalls } from '@/hooks/use-realtime-calls';
 import { PlanningChat } from './planning-chat';
 import { CallCard } from './call-card';
@@ -16,12 +17,21 @@ import {
   Sparkles,
   Brain,
   Loader2,
+  Crown,
+  ArrowUpRight,
 } from 'lucide-react';
 import type { Task, ChatMessage, CallPlan } from '@/types';
+
+interface CreditData {
+  creditsRemaining: number;
+  creditsMonthlyAllowance: number;
+  accountTier: string;
+}
 
 interface CallDashboardProps {
   taskId: string;
   task: Task;
+  creditData?: CreditData;
 }
 
 const DONE_STATUSES = ['completed', 'failed', 'no_answer', 'busy'];
@@ -79,8 +89,9 @@ const PHASE_CONFIGS: Record<TaskPhase, PhaseConfig> = {
   },
 };
 
-export function CallDashboard({ taskId, task }: CallDashboardProps) {
+export function CallDashboard({ taskId, task, creditData }: CallDashboardProps) {
   const { calls, loading } = useRealtimeCalls(taskId);
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
 
   const stats = useMemo(() => {
     const total = calls.length;
@@ -112,6 +123,7 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
         initialMessages={(task.clarifying_messages || []) as ChatMessage[]}
         plan={task.plan as CallPlan | null}
         status={task.status}
+        creditData={creditData}
       />
     );
   }
@@ -315,6 +327,75 @@ export function CallDashboard({ taskId, task }: CallDashboardProps) {
 
       {/* Summary when all done */}
       {stats.allDone && <CallSummary taskId={taskId} calls={calls} existingSummary={task.summary} />}
+
+      {/* Post-call upgrade nudge */}
+      {stats.allDone && creditData && creditData.accountTier !== 'unlimited' && creditData.creditsRemaining <= 10 && !nudgeDismissed && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          padding: '16px 20px',
+          borderRadius: 8,
+          border: '1px solid #E3E2DE',
+          backgroundColor: '#FFFFFF',
+          marginTop: 16,
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 36,
+            height: 36,
+            borderRadius: 8,
+            backgroundColor: 'rgba(35,131,226,0.06)',
+            flexShrink: 0,
+          }}>
+            <Crown style={{ width: 18, height: 18, color: '#2383E2' }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#37352F', margin: 0 }}>
+              Running low on credits?
+            </p>
+            <p style={{ fontSize: 13, color: '#787774', margin: '2px 0 0' }}>
+              {creditData.creditsRemaining} credit{creditData.creditsRemaining !== 1 ? 's' : ''} remaining
+            </p>
+          </div>
+          <Link
+            href="/pricing"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '7px 14px',
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#FFFFFF',
+              backgroundColor: '#2383E2',
+              borderRadius: 8,
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            View Plans
+            <ArrowUpRight style={{ width: 14, height: 14 }} />
+          </Link>
+          <button
+            onClick={() => setNudgeDismissed(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 4,
+              color: '#B4B4B0',
+              fontSize: 18,
+              lineHeight: 1,
+              fontFamily: 'inherit',
+            }}
+          >
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* Post-call follow-up questions to build memory */}
       {stats.allDone && (

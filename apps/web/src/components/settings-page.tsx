@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import type { UserProfile, CreditTransaction } from '@/types';
-import { VOICE_OPTIONS, TIMEZONE_OPTIONS, TIER_LIMITS } from '@/types';
+import { VOICE_OPTIONS, TIMEZONE_OPTIONS } from '@/types';
 
 interface SettingsPageProps {
   profile: UserProfile | null;
@@ -345,7 +345,6 @@ export function SettingsPage({ profile, userId, userEmail, creditTransactions = 
   const creditsMonthly = (profile as unknown as Record<string, unknown>)?.credits_monthly_allowance as number ?? 25;
   const billingPeriodEnd = (profile as unknown as Record<string, unknown>)?.billing_period_end as string || '';
 
-  const tierConfig = TIER_LIMITS[accountTier as keyof typeof TIER_LIMITS] || TIER_LIMITS.free;
   const isUnlimited = accountTier === 'unlimited';
   const creditPercent = isUnlimited ? 100 : creditsMonthly > 0 ? Math.round((creditsRemaining / creditsMonthly) * 100) : 0;
   const creditBarColor = isUnlimited ? '#6940A5' : creditPercent > 40 ? '#4DAB9A' : creditPercent > 15 ? '#D9730D' : '#EB5757';
@@ -900,7 +899,24 @@ export function SettingsPage({ profile, userId, userEmail, creditTransactions = 
           {/* Current Plan Card */}
           <div style={{ background: '#FFFFFF', border: '1px solid #E3E2DE', borderRadius: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px' }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Current Plan</h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: '#37352F', margin: 0 }}>Current Plan</h2>
+                <Link
+                  href="/pricing"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: '#2383E2',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Compare Plans
+                  <ArrowUpRight style={{ width: 13, height: 13 }} />
+                </Link>
+              </div>
               <p style={{ fontSize: 12, color: '#787774', marginTop: 2 }}>
                 Manage your subscription and credits.
               </p>
@@ -1084,25 +1100,6 @@ export function SettingsPage({ profile, userId, userEmail, creditTransactions = 
                 </div>
               )}
 
-              {/* Plan limits summary */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-                <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid #E3E2DE' }}>
-                  <div style={{ fontSize: 11, color: '#787774', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Max call duration</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#37352F' }}>{tierConfig.max_call_duration_sec / 60} min</div>
-                </div>
-                <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid #E3E2DE' }}>
-                  <div style={{ fontSize: 11, color: '#787774', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Concurrent calls</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#37352F' }}>{tierConfig.concurrent_calls}</div>
-                </div>
-                <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid #E3E2DE' }}>
-                  <div style={{ fontSize: 11, color: '#787774', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Daily tasks</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#37352F' }}>{tierConfig.daily_tasks === -1 ? 'Unlimited' : tierConfig.daily_tasks}</div>
-                </div>
-                <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid #E3E2DE' }}>
-                  <div style={{ fontSize: 11, color: '#787774', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500 }}>Summary model</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: '#37352F' }}>{tierConfig.summary_model.includes('opus') ? 'Opus' : 'Haiku'}</div>
-                </div>
-              </div>
             </div>
           </div>
 

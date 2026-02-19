@@ -19,6 +19,7 @@ import {
   Star,
   ClipboardList,
   Zap,
+  Crown,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -130,41 +131,59 @@ export function NavSidebar({ userName, unreadNotifications = 0, creditsRemaining
           {secondaryNav.map((item) => (
             <NavItem key={item.href} item={item} />
           ))}
+          {accountTier !== 'unlimited' && (
+            <Link
+              href="/pricing"
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                'group flex items-center gap-2.5 rounded-[6px] px-2.5 py-[5px] text-[14px] leading-[1.4] transition-colors duration-100',
+                isActive('/pricing')
+                  ? 'bg-[#EFEFEF] font-medium'
+                  : 'hover:bg-[#EFEFEF]'
+              )}
+              style={{ color: '#2383E2', textDecoration: 'none' }}
+            >
+              <Crown className="h-[18px] w-[18px] shrink-0" strokeWidth={1.5} />
+              <span className="truncate">Upgrade</span>
+            </Link>
+          )}
         </div>
       </nav>
 
       {/* Credit pill */}
-      <div className="mx-2 mb-1 px-2.5">
-        <Link
-          href="/settings?tab=billing"
-          onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-2 rounded-[6px] px-2.5 py-[6px] text-[13px] transition-colors duration-100 hover:bg-[#EFEFEF]"
-          style={{ textDecoration: 'none', color: 'inherit' }}
-        >
-          <Zap
-            className="h-[14px] w-[14px] shrink-0"
-            strokeWidth={1.5}
-            style={{
-              color: accountTier === 'unlimited' ? '#6940A5'
-                : creditsRemaining > (creditsMonthlyAllowance * 0.4) ? '#4DAB9A'
-                : creditsRemaining > (creditsMonthlyAllowance * 0.15) ? '#D9730D'
-                : '#EB5757',
-            }}
-          />
-          <span
-            className="font-medium"
-            style={{
-              color: accountTier === 'unlimited' ? '#6940A5'
-                : creditsRemaining > (creditsMonthlyAllowance * 0.4) ? '#4DAB9A'
-                : creditsRemaining > (creditsMonthlyAllowance * 0.15) ? '#D9730D'
-                : '#EB5757',
-            }}
-          >
-            {accountTier === 'unlimited' ? '∞' : creditsRemaining}
-          </span>
-          <span style={{ color: '#B4B4B0', fontSize: 12 }}>credits</span>
-        </Link>
-      </div>
+      {(() => {
+        const isLow = accountTier !== 'unlimited' && creditsRemaining <= (creditsMonthlyAllowance * 0.2);
+        const pillHref = isLow ? '/pricing' : '/settings?tab=billing';
+        const pillColor = accountTier === 'unlimited' ? '#6940A5'
+          : creditsRemaining > (creditsMonthlyAllowance * 0.4) ? '#4DAB9A'
+          : creditsRemaining > (creditsMonthlyAllowance * 0.15) ? '#D9730D'
+          : '#EB5757';
+        return (
+          <div className="mx-2 mb-1 px-2.5">
+            <Link
+              href={pillHref}
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 rounded-[6px] px-2.5 py-[6px] text-[13px] transition-colors duration-100 hover:bg-[#EFEFEF]"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <Zap
+                className="h-[14px] w-[14px] shrink-0"
+                strokeWidth={1.5}
+                style={{ color: pillColor }}
+              />
+              <span className="font-medium" style={{ color: pillColor }}>
+                {accountTier === 'unlimited' ? '∞' : creditsRemaining}
+              </span>
+              <span style={{ color: '#B4B4B0', fontSize: 12 }}>credits</span>
+              {isLow && (
+                <span style={{ marginLeft: 'auto', color: '#2383E2', fontSize: 12, fontWeight: 600 }}>
+                  Upgrade
+                </span>
+              )}
+            </Link>
+          </div>
+        );
+      })()}
 
       {/* User section */}
       <div

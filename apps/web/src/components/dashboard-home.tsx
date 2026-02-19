@@ -192,6 +192,7 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
   const [loading, setLoading] = useState(false);
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
   const [greeting, setGreeting] = useState('Welcome');
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const router = useRouter();
   const firstName = userName.split(' ')[0] || 'there';
 
@@ -271,51 +272,77 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
         />
       )}
 
-      {/* Upgrade Banner — show when free tier and credits ≤ 5 */}
-      {creditData && creditData.accountTier === 'free' && creditData.creditsRemaining <= 5 && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '14px 20px',
-          borderRadius: 8,
-          background: 'linear-gradient(135deg, rgba(35,131,226,0.06), rgba(105,64,165,0.06))',
-          border: '1px solid rgba(35,131,226,0.15)',
-          marginBottom: 24,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Crown style={{ width: 18, height: 18, color: '#2383E2' }} />
-            <div>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#37352F' }}>
-                {creditData.creditsRemaining === 0 ? "You're out of credits" : `Only ${creditData.creditsRemaining} credit${creditData.creditsRemaining !== 1 ? 's' : ''} left`}
-              </span>
-              <span style={{ fontSize: 13, color: '#787774', marginLeft: 8 }}>
-                Upgrade to Pro for 200 credits/month
-              </span>
+      {/* Upgrade Banner — show for non-unlimited users with ≤ 10 credits */}
+      {creditData && creditData.accountTier !== 'unlimited' && creditData.creditsRemaining <= 10 && !bannerDismissed && (() => {
+        const isZero = creditData.creditsRemaining === 0;
+        const isFree = creditData.accountTier === 'free';
+        const accentColor = isZero ? '#EB5757' : '#2383E2';
+        const message = isZero
+          ? "You're out of credits"
+          : `Only ${creditData.creditsRemaining} credit${creditData.creditsRemaining !== 1 ? 's' : ''} left`;
+        const subtitle = isFree
+          ? 'Upgrade to Pro for 200 credits/month'
+          : 'Buy more credits or go Unlimited';
+        return (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '14px 20px',
+            borderRadius: 8,
+            backgroundColor: '#FFFFFF',
+            border: `1px solid ${isZero ? 'rgba(235,87,87,0.2)' : '#E3E2DE'}`,
+            borderLeft: `4px solid ${accentColor}`,
+            marginBottom: 24,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+              <Crown style={{ width: 18, height: 18, color: accentColor, flexShrink: 0 }} />
+              <div>
+                <span style={{ fontSize: 14, fontWeight: 600, color: '#37352F' }}>{message}</span>
+                <span style={{ fontSize: 13, color: '#787774', marginLeft: 8 }}>{subtitle}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+              <Link
+                href="/pricing"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '6px 14px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#FFFFFF',
+                  background: accentColor,
+                  border: 'none',
+                  borderRadius: 8,
+                  textDecoration: 'none',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                View Plans
+                <ArrowUpRight style={{ width: 14, height: 14 }} />
+              </Link>
+              <button
+                onClick={() => setBannerDismissed(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: 4,
+                  color: '#B4B4B0',
+                  fontSize: 18,
+                  lineHeight: 1,
+                  fontFamily: 'inherit',
+                }}
+                title="Dismiss"
+              >
+                &times;
+              </button>
             </div>
           </div>
-          <Link
-            href="/pricing"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '6px 14px',
-              fontSize: 13,
-              fontWeight: 600,
-              color: '#FFFFFF',
-              background: '#2383E2',
-              border: 'none',
-              borderRadius: 8,
-              textDecoration: 'none',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            View Plans
-            <ArrowUpRight style={{ width: 14, height: 14 }} />
-          </Link>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Hero: Greeting + Input */}
       <div style={{ marginBottom: 48 }}>
