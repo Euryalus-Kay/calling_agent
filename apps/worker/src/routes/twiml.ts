@@ -60,7 +60,6 @@ export async function twimlRoute(fastify: FastifyInstance) {
       speechModel="nova-3-general"
       welcomeGreeting="${greeting}"
       interruptible="true"
-      interruptByDtmf="true"
       dtmfDetection="true"
     />
   </Connect>

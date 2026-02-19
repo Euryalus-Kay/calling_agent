@@ -12,9 +12,19 @@ export async function initiateCall(
   const twimlUrl = `https://${config.WS_DOMAIN}/twiml?callId=${encodeURIComponent(callId)}`;
   const statusCallbackUrl = `https://${config.WS_DOMAIN}/status-callback`;
 
-  // Use provided caller ID (verified user number), or get one from the pool
-  const from = (fromNumber && fromNumber.length > 0) ? fromNumber : getAvailableNumber(callId);
-  console.log(`[CallManager] Call ${callId}: fromNumber=${JSON.stringify(fromNumber)}, resolved from=${from}`);
+  // Use provided caller ID (verified user number), or get one from the pool.
+  // CRITICAL: If the caller ID matches the destination number, we'd be calling
+  // ourselves — carriers reject/loop this. Fall back to a pool number instead.
+  let from: string;
+  if (fromNumber && fromNumber.length > 0 && fromNumber !== toNumber) {
+    from = fromNumber;
+  } else {
+    if (fromNumber && fromNumber === toNumber) {
+      console.log(`[CallManager] Call ${callId}: caller ID ${fromNumber} matches destination — using pool number to avoid self-call`);
+    }
+    from = getAvailableNumber(callId);
+  }
+  console.log(`[CallManager] Call ${callId}: fromNumber=${JSON.stringify(fromNumber)}, to=${toNumber}, resolved from=${from}`);
 
   const call = await client.calls.create({
     from,
