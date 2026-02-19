@@ -27,6 +27,9 @@ import {
   PhoneForwarded,
   MessageCircle,
   Crown,
+  CalendarClock,
+  Repeat,
+  X,
 } from 'lucide-react';
 import { OnboardingNudge } from './onboarding-nudge';
 import type { Task } from '@/types';
@@ -193,30 +196,65 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
   const [quickActionLoading, setQuickActionLoading] = useState<string | null>(null);
   const [greeting, setGreeting] = useState('Welcome');
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [showSchedulePopover, setShowSchedulePopover] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('09:00');
+  const [scheduleRecurrence, setScheduleRecurrence] = useState<string>('');
+  const [schedulingInProgress, setSchedulingInProgress] = useState(false);
+  const scheduleRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const firstName = userName.split(' ')[0] || 'there';
 
   // Set greeting on client only to avoid SSR hydration mismatch
   useEffect(() => {
     setGreeting(getGreeting());
+    // Default schedule date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setScheduleDate(tomorrow.toISOString().split('T')[0]);
   }, []);
+
+  // Close schedule popover on click outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (scheduleRef.current && !scheduleRef.current.contains(e.target as Node)) {
+        setShowSchedulePopover(false);
+      }
+    }
+    if (showSchedulePopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSchedulePopover]);
 
   const successRate =
     stats.total_calls > 0
       ? Math.round((stats.successful_calls / stats.total_calls) * 100)
       : 0;
 
-  async function createTask(text: string) {
+  async function createTask(text: string, schedule?: { scheduled_for: string; recurrence?: string }) {
     try {
+      const body: Record<string, unknown> = { input_text: text };
+      if (schedule) {
+        body.scheduled_for = schedule.scheduled_for;
+        if (schedule.recurrence) body.recurrence = schedule.recurrence;
+      }
+
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input_text: text }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`);
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Request failed with status ${res.status}`);
       }
       const data = await res.json();
+      if (schedule) {
+        toast.success('Task scheduled!', {
+          description: `Scheduled for ${new Date(schedule.scheduled_for).toLocaleString()}${schedule.recurrence ? ` (${schedule.recurrence})` : ''}`,
+        });
+      }
       if (data.taskId) {
         router.push(`/tasks/${data.taskId}`);
       } else {
@@ -225,7 +263,7 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Something went wrong';
-      toast.error('Failed to create task', {
+      toast.error(schedule ? 'Failed to schedule task' : 'Failed to create task', {
         description: message,
       });
     }
@@ -237,6 +275,18 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
     setLoading(true);
     await createTask(taskText.trim());
     setLoading(false);
+  }
+
+  async function handleScheduleSubmit() {
+    if (!taskText.trim() || !scheduleDate || !scheduleTime) return;
+    setSchedulingInProgress(true);
+    setShowSchedulePopover(false);
+    const scheduledFor = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+    await createTask(taskText.trim(), {
+      scheduled_for: scheduledFor,
+      recurrence: scheduleRecurrence || undefined,
+    });
+    setSchedulingInProgress(false);
   }
 
   async function handleQuickAction(action: typeof QUICK_ACTIONS[0]) {
@@ -490,55 +540,233 @@ export function DashboardHome({ userName, recentTasks, stats, nudgeData, creditD
                     </>
                   ) : null}
                 </span>
-                <button
-                  type="submit"
-                  disabled={!taskText.trim() || loading}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '6px 16px',
-                    fontSize: 14,
-                    fontWeight: 500,
-                    color: '#FFFFFF',
-                    backgroundColor:
-                      !taskText.trim() || loading ? '#B4B4B0' : '#2383E2',
-                    border: 'none',
-                    borderRadius: 8,
-                    cursor: !taskText.trim() || loading ? 'not-allowed' : 'pointer',
-                    transition: 'background-color 0.15s ease',
-                    fontFamily: 'inherit',
-                    lineHeight: 1.4,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (taskText.trim() && !loading) {
-                      e.currentTarget.style.backgroundColor = '#1B6DBF';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (taskText.trim() && !loading) {
-                      e.currentTarget.style.backgroundColor = '#2383E2';
-                    }
-                  }}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* Schedule button with popover */}
+                  <div ref={scheduleRef} style={{ position: 'relative' }}>
+                    <button
+                      type="button"
+                      disabled={!taskText.trim() || loading || schedulingInProgress}
+                      onClick={() => setShowSchedulePopover(!showSchedulePopover)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '6px 12px',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: !taskText.trim() || loading ? '#B4B4B0' : '#787774',
+                        backgroundColor: 'transparent',
+                        border: `1px solid ${showSchedulePopover ? '#2383E2' : '#E3E2DE'}`,
+                        borderRadius: 8,
+                        cursor: !taskText.trim() || loading ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.15s ease',
+                        fontFamily: 'inherit',
+                        lineHeight: 1.4,
+                      }}
+                      onMouseEnter={(e) => {
+                        if (taskText.trim() && !loading) {
+                          e.currentTarget.style.borderColor = '#2383E2';
+                          e.currentTarget.style.color = '#2383E2';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!showSchedulePopover) {
+                          e.currentTarget.style.borderColor = '#E3E2DE';
+                          e.currentTarget.style.color = '#787774';
+                        }
+                      }}
+                    >
+                      {schedulingInProgress ? (
+                        <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <CalendarClock style={{ width: 14, height: 14 }} />
+                      )}
+                      {schedulingInProgress ? 'Scheduling...' : 'Schedule'}
+                    </button>
+
+                    {/* Schedule popover */}
+                    {showSchedulePopover && (
+                      <div
                         style={{
-                          width: 14,
-                          height: 14,
-                          animation: 'spin 1s linear infinite',
+                          position: 'absolute',
+                          bottom: 'calc(100% + 8px)',
+                          right: 0,
+                          width: 280,
+                          padding: 16,
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: 10,
+                          border: '1px solid #E3E2DE',
+                          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                          zIndex: 50,
                         }}
-                      />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Send style={{ width: 14, height: 14 }} />
-                      Send task
-                    </>
-                  )}
-                </button>
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: '#37352F' }}>Schedule this task</span>
+                          <button
+                            type="button"
+                            onClick={() => setShowSchedulePopover(false)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: '#787774' }}
+                          >
+                            <X style={{ width: 14, height: 14 }} />
+                          </button>
+                        </div>
+
+                        {/* Date */}
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#787774', marginBottom: 4 }}>
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          value={scheduleDate}
+                          onChange={(e) => setScheduleDate(e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          style={{
+                            width: '100%',
+                            padding: '7px 10px',
+                            fontSize: 13,
+                            color: '#37352F',
+                            border: '1px solid #E3E2DE',
+                            borderRadius: 6,
+                            backgroundColor: '#FFFFFF',
+                            outline: 'none',
+                            marginBottom: 10,
+                            boxSizing: 'border-box',
+                            fontFamily: 'inherit',
+                          }}
+                        />
+
+                        {/* Time */}
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#787774', marginBottom: 4 }}>
+                          Time
+                        </label>
+                        <input
+                          type="time"
+                          value={scheduleTime}
+                          onChange={(e) => setScheduleTime(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '7px 10px',
+                            fontSize: 13,
+                            color: '#37352F',
+                            border: '1px solid #E3E2DE',
+                            borderRadius: 6,
+                            backgroundColor: '#FFFFFF',
+                            outline: 'none',
+                            marginBottom: 10,
+                            boxSizing: 'border-box',
+                            fontFamily: 'inherit',
+                          }}
+                        />
+
+                        {/* Recurrence */}
+                        <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: '#787774', marginBottom: 4 }}>
+                          <Repeat style={{ width: 11, height: 11, display: 'inline', verticalAlign: 'middle', marginRight: 4 }} />
+                          Repeat
+                        </label>
+                        <select
+                          value={scheduleRecurrence}
+                          onChange={(e) => setScheduleRecurrence(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '7px 10px',
+                            fontSize: 13,
+                            color: '#37352F',
+                            border: '1px solid #E3E2DE',
+                            borderRadius: 6,
+                            backgroundColor: '#FFFFFF',
+                            outline: 'none',
+                            marginBottom: 14,
+                            boxSizing: 'border-box',
+                            fontFamily: 'inherit',
+                          }}
+                        >
+                          <option value="">No repeat</option>
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                        </select>
+
+                        {/* Schedule confirm button */}
+                        <button
+                          type="button"
+                          disabled={!scheduleDate || !scheduleTime}
+                          onClick={handleScheduleSubmit}
+                          style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 6,
+                            padding: '8px 16px',
+                            fontSize: 14,
+                            fontWeight: 500,
+                            color: '#FFFFFF',
+                            backgroundColor: !scheduleDate || !scheduleTime ? '#B4B4B0' : '#2383E2',
+                            border: 'none',
+                            borderRadius: 8,
+                            cursor: !scheduleDate || !scheduleTime ? 'not-allowed' : 'pointer',
+                            fontFamily: 'inherit',
+                            transition: 'background-color 0.15s ease',
+                          }}
+                        >
+                          <CalendarClock style={{ width: 14, height: 14 }} />
+                          Schedule task
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Send task button */}
+                  <button
+                    type="submit"
+                    disabled={!taskText.trim() || loading || schedulingInProgress}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '6px 16px',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      color: '#FFFFFF',
+                      backgroundColor:
+                        !taskText.trim() || loading || schedulingInProgress ? '#B4B4B0' : '#2383E2',
+                      border: 'none',
+                      borderRadius: 8,
+                      cursor: !taskText.trim() || loading || schedulingInProgress ? 'not-allowed' : 'pointer',
+                      transition: 'background-color 0.15s ease',
+                      fontFamily: 'inherit',
+                      lineHeight: 1.4,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (taskText.trim() && !loading && !schedulingInProgress) {
+                        e.currentTarget.style.backgroundColor = '#1B6DBF';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (taskText.trim() && !loading && !schedulingInProgress) {
+                        e.currentTarget.style.backgroundColor = '#2383E2';
+                      }
+                    }}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2
+                          style={{
+                            width: 14,
+                            height: 14,
+                            animation: 'spin 1s linear infinite',
+                          }}
+                        />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Send style={{ width: 14, height: 14 }} />
+                        Send task
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </fieldset>

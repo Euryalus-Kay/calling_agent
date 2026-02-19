@@ -142,21 +142,63 @@ export async function POST(request: Request) {
       });
     }
 
-    // Update task with plan
+    // If scheduled_for is provided, create a scheduled_tasks entry and link it
+    let scheduledTaskId: string | null = null;
+    const scheduledFor = body.scheduled_for;
+    const recurrence = body.recurrence;
+
+    if (scheduledFor && typeof scheduledFor === 'string') {
+      const scheduledDate = new Date(scheduledFor);
+      if (scheduledDate > new Date()) {
+        const { data: scheduled, error: schedError } = await supabase
+          .from('scheduled_tasks')
+          .insert({
+            user_id: user.id,
+            title: plan.plan?.summary || input_text.slice(0, 100),
+            description: input_text,
+            scheduled_for: scheduledFor,
+            recurrence: recurrence && ['daily', 'weekly', 'monthly'].includes(recurrence) ? recurrence : null,
+            status: 'pending',
+          })
+          .select('id')
+          .single();
+
+        if (schedError) {
+          console.error('Failed to create scheduled task:', schedError);
+        } else if (scheduled) {
+          scheduledTaskId = scheduled.id;
+        }
+      }
+    }
+
+    // Update task with plan (and optional schedule link)
+    const taskUpdate: Record<string, unknown> = {
+      parsed_intent: plan as unknown as Record<string, unknown>,
+      status: plan.status === 'ready' ? 'ready' : 'planning',
+      plan: plan.plan || null,
+      clarifying_messages: [
+        { role: 'user', content: input_text },
+        { role: 'assistant', content: plan.message },
+      ],
+    };
+    if (scheduledTaskId) {
+      taskUpdate.scheduled_task_id = scheduledTaskId;
+    }
+
     await supabase
       .from('tasks')
-      .update({
-        parsed_intent: plan as unknown as Record<string, unknown>,
-        status: plan.status === 'ready' ? 'ready' : 'planning',
-        plan: plan.plan || null,
-        clarifying_messages: [
-          { role: 'user', content: input_text },
-          { role: 'assistant', content: plan.message },
-        ],
-      })
+      .update(taskUpdate)
       .eq('id', task.id);
 
-    return NextResponse.json({ taskId: task.id, plan });
+    // Also link the scheduled_task back to the task
+    if (scheduledTaskId) {
+      await supabase
+        .from('scheduled_tasks')
+        .update({ task_id: task.id })
+        .eq('id', scheduledTaskId);
+    }
+
+    return NextResponse.json({ taskId: task.id, plan, scheduled: !!scheduledTaskId });
   } catch (err) {
     console.error('Unexpected error in POST /api/tasks:', err);
     return NextResponse.json(

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   Phone,
   CheckCircle,
@@ -13,6 +14,7 @@ import {
   ArrowUpRight,
   Star,
   PhoneOff,
+  StopCircle,
 } from 'lucide-react';
 import type { Task } from '@/types';
 
@@ -49,6 +51,12 @@ const statusConfig: Record<
     color: '#EB5757',
     bgColor: 'rgba(235,87,87,0.06)',
     icon: AlertCircle,
+  },
+  cancelled: {
+    label: 'Cancelled',
+    color: '#787774',
+    bgColor: 'rgba(120,119,116,0.06)',
+    icon: StopCircle,
   },
 };
 
@@ -87,9 +95,46 @@ const tabStyle = (active: boolean): React.CSSProperties => ({
   transition: 'background 120ms ease',
 });
 
-export function TaskHistoryList({ tasks }: { tasks: Task[] }) {
+export function TaskHistoryList({ tasks: initialTasks }: { tasks: Task[] }) {
+  const [tasks, setTasks] = useState(initialTasks);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterTab>('all');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancel = useCallback(async (taskId: string, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent Link navigation
+    e.stopPropagation();
+
+    if (!window.confirm('Cancel this task? Any active calls will be hung up.')) return;
+
+    setCancellingId(taskId);
+
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: 'failed' as const } : t))
+    );
+
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/cancel`, {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to cancel task');
+      }
+
+      toast.success('Task cancelled');
+    } catch (err) {
+      // Revert optimistic update
+      setTasks(initialTasks);
+      toast.error('Failed to cancel task', {
+        description: err instanceof Error ? err.message : 'Please try again',
+      });
+    } finally {
+      setCancellingId(null);
+    }
+  }, [initialTasks]);
 
   const filtered = useMemo(() => {
     let result = tasks;
@@ -131,7 +176,7 @@ export function TaskHistoryList({ tasks }: { tasks: Task[] }) {
         </div>
         <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 4, color: '#37352F' }}>No tasks yet</h2>
         <p style={{ fontSize: 14, color: '#787774', maxWidth: 360 }}>
-          Go to the home page and tell me what you need. I'll plan the calls and get things done.
+          Go to the home page and tell me what you need. I&apos;ll plan the calls and get things done.
         </p>
         <Link
           href="/"
@@ -220,6 +265,7 @@ export function TaskHistoryList({ tasks }: { tasks: Task[] }) {
             const config = statusConfig[task.status] || statusConfig.planning;
             const StatusIcon = config.icon;
             const isActive = ['planning', 'ready', 'in_progress'].includes(task.status);
+            const isCancelling = cancellingId === task.id;
 
             return (
               <Link key={task.id} href={`/tasks/${task.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -276,7 +322,7 @@ export function TaskHistoryList({ tasks }: { tasks: Task[] }) {
                   </div>
 
                   {/* Meta */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     <span style={{ fontSize: 12, color: '#787774' }}>
                       {formatDate(task.created_at)}
                     </span>
@@ -301,6 +347,47 @@ export function TaskHistoryList({ tasks }: { tasks: Task[] }) {
                       )}
                       {config.label}
                     </span>
+
+                    {/* Cancel button for active tasks */}
+                    {isActive && (
+                      <button
+                        onClick={(e) => handleCancel(task.id, e)}
+                        disabled={isCancelling}
+                        title="Cancel task"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          height: 28,
+                          width: 28,
+                          padding: 0,
+                          border: '1px solid transparent',
+                          borderRadius: 6,
+                          background: 'transparent',
+                          cursor: isCancelling ? 'not-allowed' : 'pointer',
+                          color: '#787774',
+                          transition: 'all 120ms ease',
+                          flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'rgba(235,87,87,0.08)';
+                          e.currentTarget.style.color = '#EB5757';
+                          e.currentTarget.style.borderColor = 'rgba(235,87,87,0.2)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = '#787774';
+                          e.currentTarget.style.borderColor = 'transparent';
+                        }}
+                      >
+                        {isCancelling ? (
+                          <Loader2 style={{ height: 14, width: 14 }} className="animate-spin" />
+                        ) : (
+                          <StopCircle style={{ height: 14, width: 14 }} />
+                        )}
+                      </button>
+                    )}
+
                     <ArrowUpRight style={{ height: 16, width: 16, color: '#787774', opacity: 0.4 }} />
                   </div>
                 </div>
