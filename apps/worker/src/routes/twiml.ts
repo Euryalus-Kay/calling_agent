@@ -13,72 +13,117 @@ function escapeXml(s: string): string {
 }
 
 /**
- * Build a short, natural greeting that starts immediately on pickup.
- * Keep it concise: identify as AI, say who sent us, state what we need.
- * Never use raw business_name if it's generic (e.g. "Personal Contact").
+ * Build a short, natural greeting.
+ * Format: "Hi, this is an AI agent calling on behalf of [user]. [user] was wondering [purpose]."
+ * The purpose is rewritten so the user's name is the subject, not "ask" or "call".
  */
 function buildGreeting(callId: string | undefined): string {
-  if (!callId) return 'Hi, this is an AI assistant. Do you have a moment?';
+  if (!callId) return 'Hi, this is an AI agent. Do you have a moment?';
 
   const session = sessionStore.get(callId);
-  if (!session) return 'Hi, this is an AI assistant. Do you have a moment?';
+  if (!session) return 'Hi, this is an AI agent. Do you have a moment?';
 
   const profile = session.userProfile as Record<string, unknown>;
   const userName = String(profile?.full_name || '').trim();
   const purpose = session.purpose || '';
 
-  // Extract a clean, short purpose — take the core action, skip filler
-  const shortPurpose = cleanPurpose(purpose);
-
-  if (userName && shortPurpose) {
-    return `Hi, this is an AI agent calling on behalf of ${userName}. ${shortPurpose}`;
+  if (!userName) {
+    return 'Hi, this is an AI agent. Do you have a moment?';
   }
 
-  if (userName) {
-    return `Hi, this is an AI agent calling on behalf of ${userName}. Do you have a moment?`;
+  // Rewrite the purpose so the user is the subject
+  const purposeLine = rewritePurpose(purpose, userName);
+
+  if (purposeLine) {
+    return `Hi, this is an AI agent calling on behalf of ${userName}. ${purposeLine}`;
   }
 
-  if (shortPurpose) {
-    return `Hi, this is an AI agent. ${shortPurpose}`;
-  }
-
-  return 'Hi, this is an AI agent. Do you have a moment?';
+  return `Hi, this is an AI agent calling on behalf of ${userName}. Do you have a moment?`;
 }
 
 /**
- * Clean up the raw purpose string into a short, natural sentence.
- * Strips filler like "Call on behalf of X and...", keeps the core ask.
+ * Rewrite the raw planner purpose into a natural sentence with the user as subject.
+ *
+ * Input examples from planner:
+ *   "Call on behalf of Karel and ask how their day was — have a friendly, casual conversation"
+ *   "Schedule an oil change for next Saturday"
+ *   "Ask about availability for a dental cleaning"
+ *   "Check if they have the part in stock"
+ *   "Remind them about the appointment tomorrow"
+ *
+ * Output examples:
+ *   "Karel was wondering how your day was."
+ *   "Karel wanted to schedule an oil change for next Saturday."
+ *   "Karel wanted to ask about availability for a dental cleaning."
+ *   "Karel wanted to check if you have the part in stock."
+ *   "Karel wanted to remind you about the appointment tomorrow."
  */
-function cleanPurpose(raw: string): string {
+function rewritePurpose(raw: string, userName: string): string {
   if (!raw) return '';
 
-  // Remove common filler patterns from AI planner output
-  let cleaned = raw
-    // "Call on behalf of X and ask ..." → "ask ..."
-    .replace(/^call\s+(on behalf of\s+\w+\s+and\s+)?/i, '')
-    // "ask how their day was — have a friendly, casual c..." → "ask how their day was"
-    .replace(/\s*[—–-]\s+have\s+a\s+.*/i, '')
-    // Remove trailing ellipsis from truncation
+  let core = raw
+    // Strip "Call on behalf of X and " prefix
+    .replace(/^call\s+on\s+behalf\s+of\s+\S+\s+and\s+/i, '')
+    // Strip plain "Call and " prefix
+    .replace(/^call\s+and\s+/i, '')
+    // Strip "Call " prefix (just "Call them about...")
+    .replace(/^call\s+(them|this|the)\s+/i, '')
+    // Strip trailing filler after em-dash or dash ("— have a friendly...")
+    .replace(/\s*[—–]\s+have\s+a\s+.*/i, '')
+    // Strip trailing ellipsis from truncation
     .replace(/\.{2,}$/, '')
+    // Replace "their" with "your" (since we're talking TO the person)
+    .replace(/\btheir\b/gi, 'your')
+    // Replace "them" with "you" in relevant contexts
+    .replace(/\bask them\b/gi, 'ask you')
+    .replace(/\btell them\b/gi, 'let you know')
+    .replace(/\bremind them\b/gi, 'remind you')
+    .replace(/\bcheck with them\b/gi, 'check with you')
     .trim();
 
-  // Capitalize first letter
-  if (cleaned.length > 0) {
-    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  if (!core) return '';
+
+  // Determine the right connector based on how the purpose starts
+  const lowerCore = core.toLowerCase();
+
+  let sentence: string;
+
+  if (lowerCore.startsWith('ask ') || lowerCore.startsWith('ask about ')) {
+    // "ask how your day was" → "Karel wanted to ask how your day was."
+    sentence = `${userName} wanted to ${core}`;
+  } else if (lowerCore.startsWith('check ') || lowerCore.startsWith('find out ') || lowerCore.startsWith('see if ') || lowerCore.startsWith('see whether ')) {
+    // "check if you have..." → "Karel wanted to check if you have..."
+    sentence = `${userName} wanted to ${core}`;
+  } else if (lowerCore.startsWith('schedule ') || lowerCore.startsWith('book ') || lowerCore.startsWith('make ') || lowerCore.startsWith('set up ') || lowerCore.startsWith('cancel ')) {
+    // "schedule an oil change" → "Karel wanted to schedule an oil change."
+    sentence = `${userName} wanted to ${core}`;
+  } else if (lowerCore.startsWith('remind ')) {
+    // "remind you about..." → "Karel wanted to remind you about..."
+    sentence = `${userName} wanted to ${core}`;
+  } else if (lowerCore.startsWith('how ') || lowerCore.startsWith('what ') || lowerCore.startsWith('when ') || lowerCore.startsWith('where ') || lowerCore.startsWith('do you ') || lowerCore.startsWith('are you ') || lowerCore.startsWith('is there ')) {
+    // Direct question: "how your day was" → "Karel was wondering how your day was."
+    sentence = `${userName} was wondering ${core}`;
+  } else if (lowerCore.startsWith('get ') || lowerCore.startsWith('confirm ') || lowerCore.startsWith('verify ') || lowerCore.startsWith('follow up ') || lowerCore.startsWith('inquire ')) {
+    sentence = `${userName} wanted to ${core}`;
+  } else {
+    // Fallback: "Karel wanted to [purpose]"
+    // Lowercase first char since it follows "wanted to"
+    const lowered = core.charAt(0).toLowerCase() + core.slice(1);
+    sentence = `${userName} wanted to ${lowered}`;
   }
 
-  // If it doesn't end with a question mark or period, add a period
-  if (cleaned && !/[.?!]$/.test(cleaned)) {
-    cleaned += '.';
+  // Clean up: ensure proper ending punctuation
+  sentence = sentence.replace(/[.!?]+$/, '').trim();
+
+  // Add question mark if it reads like a question, otherwise period
+  if (/\b(wondering|how|what|when|where|do you|are you|is there)\b/i.test(sentence)) {
+    // If it's clearly a question form, keep period (it's an indirect question)
+    sentence += '.';
+  } else {
+    sentence += '.';
   }
 
-  // Cap at ~60 chars for spoken clarity
-  if (cleaned.length > 60) {
-    const cut = cleaned.lastIndexOf(' ', 57);
-    cleaned = cleaned.slice(0, cut > 20 ? cut : 57) + '.';
-  }
-
-  return cleaned;
+  return sentence;
 }
 
 export async function twimlRoute(fastify: FastifyInstance) {
@@ -89,8 +134,7 @@ export async function twimlRoute(fastify: FastifyInstance) {
 
     // ConversationRelay TwiML connects the call to our WebSocket
     // ElevenLabs for TTS, Deepgram for STT
-    // welcomeGreeting speaks automatically as soon as the call connects — no waiting for the person to speak
-    // Removed <Pause> as it was causing dead air before the greeting played, making the person say "Hello?" first
+    // welcomeGreeting speaks automatically as soon as the call connects
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
