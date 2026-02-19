@@ -16,6 +16,7 @@ import {
   Search,
   Sparkles,
   AlertCircle,
+  Pencil,
 } from 'lucide-react';
 import type { ChatMessage, CallPlan, PlannedCall } from '@/types';
 
@@ -258,14 +259,18 @@ function CallCard({
   call,
   index,
   onRemove,
+  onEditSms,
 }: {
   call: PlannedCall;
   index: number;
   onRemove: (index: number) => void;
+  onEditSms?: (index: number, newBody: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [editingSms, setEditingSms] = useState(false);
+  const [editedSmsBody, setEditedSmsBody] = useState(call.sms_body || '');
   const priority = call.priority ?? 'medium';
   const config = PRIORITY_CONFIG[priority];
   const isLookup = !call.phone_number || call.phone_number === 'LOOKUP_NEEDED';
@@ -512,21 +517,120 @@ function CallCard({
               )}
             </div>
 
-            {/* SMS body preview */}
+            {/* SMS body preview / editor */}
             {isSMS && call.sms_body && (
               <div style={{
                 marginTop: 10,
                 padding: 10,
                 borderRadius: 6,
                 backgroundColor: 'rgba(105, 64, 165, 0.04)',
-                border: '1px solid rgba(105, 64, 165, 0.1)',
+                border: `1px solid ${editingSms ? '#6940A5' : 'rgba(105, 64, 165, 0.1)'}`,
+                transition: 'border-color 200ms',
               }}>
-                <p style={{ fontSize: 12, color: '#6940A5', fontWeight: 500, margin: '0 0 4px' }}>
-                  Message preview
-                </p>
-                <p style={{ fontSize: 13, color: COLORS.text, margin: 0, lineHeight: 1.5 }}>
-                  {call.sms_body}
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <p style={{ fontSize: 12, color: '#6940A5', fontWeight: 500, margin: 0 }}>
+                    Message preview
+                  </p>
+                  {!editingSms ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditedSmsBody(call.sms_body || '');
+                        setEditingSms(true);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 11,
+                        fontWeight: 500,
+                        color: '#6940A5',
+                        backgroundColor: 'rgba(105, 64, 165, 0.08)',
+                        border: 'none',
+                        borderRadius: 4,
+                        padding: '3px 8px',
+                        cursor: 'pointer',
+                        transition: 'background-color 150ms',
+                      }}
+                      aria-label="Edit SMS message"
+                    >
+                      <Pencil style={{ height: 10, width: 10 }} />
+                      Edit
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onEditSms) onEditSms(index, editedSmsBody);
+                          setEditingSms(false);
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 11,
+                          fontWeight: 500,
+                          color: '#FFFFFF',
+                          backgroundColor: '#6940A5',
+                          border: 'none',
+                          borderRadius: 4,
+                          padding: '3px 8px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Check style={{ height: 10, width: 10 }} />
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditedSmsBody(call.sms_body || '');
+                          setEditingSms(false);
+                        }}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          fontSize: 11,
+                          fontWeight: 500,
+                          color: COLORS.secondary,
+                          backgroundColor: 'transparent',
+                          border: `1px solid ${COLORS.border}`,
+                          borderRadius: 4,
+                          padding: '3px 8px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {editingSms ? (
+                  <textarea
+                    value={editedSmsBody}
+                    onChange={(e) => setEditedSmsBody(e.target.value)}
+                    style={{
+                      width: '100%',
+                      minHeight: 60,
+                      fontSize: 13,
+                      color: COLORS.text,
+                      lineHeight: 1.5,
+                      padding: 8,
+                      borderRadius: 4,
+                      border: `1px solid ${COLORS.border}`,
+                      backgroundColor: COLORS.white,
+                      outline: 'none',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                    }}
+                    autoFocus
+                  />
+                ) : (
+                  <p style={{ fontSize: 13, color: COLORS.text, margin: 0, lineHeight: 1.5 }}>
+                    {call.sms_body}
+                  </p>
+                )}
               </div>
             )}
 
@@ -749,6 +853,15 @@ export function PlanningChat({
     });
   }, []);
 
+  const handleEditSms = useCallback((index: number, newBody: string) => {
+    setCurrentPlan((prev) => {
+      if (!prev) return prev;
+      const updatedCalls = [...prev.calls];
+      updatedCalls[index] = { ...updatedCalls[index], sms_body: newBody };
+      return { ...prev, calls: updatedCalls };
+    });
+  }, []);
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     if (!input.trim() || sending) return;
@@ -793,6 +906,18 @@ export function PlanningChat({
     if (activeCalls.length === 0) return;
     setInitiating(true);
     try {
+      // Build map of edited SMS bodies to send to the server
+      const smsEdits: Record<number, string> = {};
+      if (currentPlan) {
+        for (let i = 0; i < currentPlan.calls.length; i++) {
+          const call = currentPlan.calls[i];
+          if (call.type === 'sms' && call.sms_body) {
+            // Always send the current sms_body so any edits are reflected
+            smsEdits[i] = call.sms_body;
+          }
+        }
+      }
+
       const res = await fetch('/api/calls/initiate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -800,6 +925,8 @@ export function PlanningChat({
           taskId,
           // Send only the calls the user kept
           removedIndices: Array.from(removedIndices),
+          // Send any edited SMS bodies
+          smsEdits,
         }),
       });
 
@@ -1497,6 +1624,7 @@ export function PlanningChat({
                         call={call}
                         index={i}
                         onRemove={handleRemoveCall}
+                        onEditSms={handleEditSms}
                       />
                     );
                   })}

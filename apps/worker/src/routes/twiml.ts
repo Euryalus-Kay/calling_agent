@@ -29,7 +29,7 @@ function buildGreeting(callId: string | undefined): string {
   const shortPurpose = purpose.length > 80 ? purpose.slice(0, 77) + '...' : purpose;
 
   if (userName && businessName) {
-    return `Hi, is this ${businessName}? Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
+    return `Hello. Hi, is this ${businessName}? Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${userName}. ${userName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
   }
 
   if (userName) {
@@ -47,10 +47,10 @@ export async function twimlRoute(fastify: FastifyInstance) {
 
     // ConversationRelay TwiML connects the call to our WebSocket
     // ElevenLabs for TTS, Deepgram for STT
-    // Pause gives the person time to put the phone to their ear before speaking
+    // welcomeGreeting speaks automatically as soon as the call connects — no waiting for the person to speak
+    // Removed <Pause> as it was causing dead air before the greeting played, making the person say "Hello?" first
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Pause length="1"/>
   <Connect>
     <ConversationRelay
       url="${wsUrl}"

@@ -131,7 +131,7 @@ export async function websocketRoute(fastify: FastifyInstance) {
 
               let greeting: string;
               if (greetingUserName && callData.businessName) {
-                greeting = `Hi, is this ${callData.businessName}? Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
+                greeting = `Hello. Hi, is this ${callData.businessName}? Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
               } else if (greetingUserName) {
                 greeting = `Hello. Just so you know, this is not a real person. I am an AI assistant calling on behalf of ${greetingUserName}. ${greetingUserName} wanted to ask about ${shortPurpose}. Do you have a moment?`;
               } else {

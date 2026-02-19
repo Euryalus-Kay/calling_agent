@@ -33,7 +33,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing task ID' }, { status: 400 });
     }
 
-    const { taskId } = body;
+    const { taskId, smsEdits } = body;
+    // smsEdits is a Record<number, string> of index→edited sms body from frontend
 
     // Use admin client for all DB ops (bypasses RLS - calls table has no INSERT policy)
     const admin = getAdminClient();
@@ -119,7 +120,13 @@ export async function POST(request: Request) {
     // Create call records and enqueue via worker HTTP endpoint
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const callRecords: Record<string, any>[] = [];
-    for (const planned of plan.calls) {
+    for (let planIdx = 0; planIdx < plan.calls.length; planIdx++) {
+      const planned = plan.calls[planIdx];
+
+      // Apply any SMS body edits from the frontend
+      if (planned.type === 'sms' && smsEdits && smsEdits[String(planIdx)]) {
+        planned.sms_body = smsEdits[String(planIdx)];
+      }
       const { data: call, error: callError } = await admin
         .from('calls')
         .insert({
